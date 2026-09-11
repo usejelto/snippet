@@ -1,0 +1,88 @@
+# Portable workflow: this component directory must be the repository root.
+name: snippet checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: component-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CI: 'true'
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Type check
+        run: npm run check
+      - name: Build every bundle and assert its budget
+        # build.mjs enforces the emitted bundle budgets and cookie-mode
+        # separation; a budget change requires a specification change first.
+        run: npm run build
+      - name: Source boundaries
+        run: npm run test:source
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snippet-bundles
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  browser:
+    # spec/snippet.md §4 runs in a real browser against the contracts mock
+    # server, so it needs a published contracts archive. That download is not
+    # configured yet, so this job waits on the repository variables rather than
+    # pretending to run: set JELTO_CONTRACTS_ARCHIVE_URL and
+    # JELTO_CONTRACTS_ARCHIVE_SHA256 to activate it. CONTRIBUTING.md covers
+    # running the suite locally with JELTO_CONTRACTS_DIR.
+    if: vars.JELTO_CONTRACTS_ARCHIVE_URL != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26.8'
+      - name: Install the pinned contracts archive
+        env:
+          ARCHIVE_URL: ${{ vars.JELTO_CONTRACTS_ARCHIVE_URL }}
+          ARCHIVE_SHA256: ${{ vars.JELTO_CONTRACTS_ARCHIVE_SHA256 }}
+        run: |
+          set -euo pipefail
+          curl -fsSL "$ARCHIVE_URL" -o contracts.zip
+          echo "$ARCHIVE_SHA256  contracts.zip" | sha256sum -c -
+          unzip -q contracts.zip -d "$RUNNER_TEMP/contracts"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Browser and timing contracts
+        env:
+          JELTO_CONTRACTS_DIR: ${{ runner.temp }}/contracts
+        run: npm test

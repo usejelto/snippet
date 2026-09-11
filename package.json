@@ -1,0 +1,28 @@
+{
+  "name": "@jelto/snippet",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Jelto web snippet — spec/snippet.md. Cookieless and cookie builds with enforced bundle budgets.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usejelto/snippet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/usejelto/snippet/issues"
+  },
+  "homepage": "https://github.com/usejelto/snippet",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "tsc --noEmit",
+    "test": "npm run test:source && playwright test",
+    "test:source": "node --test checks/source-boundaries.test.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.9.2",
+    "esbuild": "^0.25.0",
+    "terser": "5.51.2",
+    "typescript": "^5.9.3"
+  }
+}
