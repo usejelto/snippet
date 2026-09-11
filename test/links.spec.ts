@@ -1,4 +1,4 @@
-// spec/snippet.md §4 — the click cases.
+// The click cases: download, outbound and tagged clicks.
 // T5, T5b, T6, T7, T8, T9, T10, T11, T11b, T11c, T12, T21, T23, T24, T26.
 
 import { test, expect } from './fixtures'
@@ -123,6 +123,51 @@ test('T10 — a download attribute makes any href a download', async ({ page, si
   expect(click!.props).toEqual({ file: 'x' })
 })
 
+test('a data: download href is out of scope: no click:download, no rewrite, no leaked payload', async ({
+  page,
+  site,
+  mockd,
+}) => {
+  await lifecycle(page)
+  await site.install()
+  site.defaults({
+    body: '<a id="dl" download="export.csv" href="data:text/csv,name%2Cemail%0Aalice%2Calice%40example.com">export</a>',
+  })
+  await site.goto('/?utm_source=producthunt')
+  await mockd.awaitEvents(1)
+
+  const before = await page.evaluate(() => (document.getElementById('dl') as HTMLAnchorElement).href)
+  await page.click('#dl')
+  const events = await mockd.quiet(1_200)
+  expect(events.filter((e) => e.n === 'click:download')).toHaveLength(0)
+  const after = await page.evaluate(() => (document.getElementById('dl') as HTMLAnchorElement).href)
+  expect(after).toBe(before)
+  expect(after).not.toContain('jl=')
+  for (const body of await mockd.bodies()) expect(body).not.toContain('alice@example.com')
+})
+
+test('a blob: download href is unchanged after click, even with a cohort available (?utm_source=producthunt)', async ({
+  page,
+  site,
+  mockd,
+}) => {
+  await lifecycle(page)
+  await site.install()
+  site.defaults({ body: '<a id="dl" download="export.csv">export</a>' })
+  await site.goto('/?utm_source=producthunt')
+  await mockd.awaitEvents(1)
+
+  const before = await page.evaluate(() => {
+    const link = document.getElementById('dl') as HTMLAnchorElement
+    link.href = URL.createObjectURL(new Blob(['name,email\nalice,alice@example.com'], { type: 'text/csv' }))
+    return link.href
+  })
+  await page.click('#dl')
+  await mockd.quiet(1_200)
+  const after = await page.evaluate(() => (document.getElementById('dl') as HTMLAnchorElement).href)
+  expect(after).toBe(before)
+})
+
 test('T11 — a modifier click, a middle click and target=_blank are never intercepted', async ({
   page,
   site,
@@ -161,6 +206,24 @@ test('T11 — a modifier click, a middle click and target=_blank are never inter
   expect(files.sort()).toEqual(['A.pkg', 'B.pkg', 'C.pkg'])
 })
 
+test('T11 — a target="_BLANK" tagged link is never delayed into a same-tab navigation and opens a popup', async ({
+  page,
+  site,
+  mockd,
+}) => {
+  await lifecycle(page)
+  await site.install()
+  site.defaults({ body: '<a id="cta" href="/thanks" target="_BLANK" data-jelto-event="cta">go</a>' })
+  await site.goto('/')
+  await mockd.awaitEvents(1)
+
+  const [popup] = await Promise.all([page.waitForEvent('popup'), page.click('#cta')])
+  expect(page.url()).toBe(SITE_ORIGIN + '/')
+  const events = await mockd.awaitEvents(2)
+  expect(events.some((e) => e.n === 'cta')).toBe(true)
+  await popup.close()
+})
+
 test('T11b — a handler that preventDefaults before the snippet suppresses both the event and the rewrite', async ({
   page,
   site,
@@ -170,7 +233,7 @@ test('T11b — a handler that preventDefaults before the snippet suppresses both
   await site.install()
   // An inline script in <head> runs at parse time; the snippet is `defer`, so
   // this listener is registered first, and a `window` capture listener runs
-  // ahead of the snippet's `document` capture listener (B13).
+  // ahead of the snippet's `document` capture listener.
   site.defaults({
     head: '<script>window.addEventListener("click", function (e) { e.preventDefault() }, true)</script>',
     body: DOWNLOAD,

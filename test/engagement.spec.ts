@@ -1,7 +1,7 @@
-// spec/snippet.md §4 — B16 and B17.
+// Engagement tests: the monotonic timer and the scroll-reach pixel maximum.
 // T33, T34, T35, T35b, T35c, T36, T37, T38, T39, T39b, T39c, T40.
 //
-// Every case here runs on Playwright's fake clock. B16 accumulates from
+// Every case here runs on Playwright's fake clock. Engaged time accumulates from
 // `performance.now()`, which `page.clock.install()` fakes along with
 // `setTimeout`, `setInterval` and `requestAnimationFrame` -- so a 45-second
 // scenario is 45 faked seconds and the assertion on `e` is exact rather than
@@ -31,7 +31,7 @@ async function boot(
 const engagements = (events: WireEvent[]): WireEvent[] => events.filter((e) => e.n === 'engagement')
 
 /**
- * Scrolls and lets B16's sampler actually sample.
+ * Scrolls and lets the scroll-reach sampler actually sample.
  *
  * Two clocks are in play and both have to turn. The `scroll` event is
  * dispatched by the browser's own pipeline in REAL time, so a real wait is
@@ -162,9 +162,9 @@ test('T37 — hide, show, hide again with nothing changed sends only one engagem
   await hide(page)
   await page.clock.runFor(500)
   // "no scroll and no FOCUS in between": the tab became visible while the
-  // window did not regain focus, so B16's clock -- visible AND focused -- never
-  // restarted and `e` is genuinely unchanged. Without that, a few milliseconds
-  // of reading accrue and B17 correctly sends a second row.
+  // window did not regain focus, so the engaged-time clock -- visible AND focused --
+  // never restarted and `e` is genuinely unchanged. Without that, a few milliseconds
+  // of reading accrue and a second row is correctly sent.
   await show(page, { focus: false })
   await hide(page)
   await page.clock.runFor(1_500)

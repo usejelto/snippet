@@ -11,7 +11,7 @@ function fire(ev: Outgoing): void {
 }
 
 function click(ev: MouseEvent): void {
-  // B3: `preventDefault()` before us means no event and no rewrite (T11b).
+  // A handler that calls `preventDefault()` before us means no event and no rewrite.
   // `auxclick` also fires for the secondary button, which is not a click.
   if (ev.defaultPrevented || ev.button > 1) return
   const t = ev.target as Element | null
@@ -20,10 +20,13 @@ function click(ev: MouseEvent): void {
   const a = t.closest('a[href]') as HTMLAnchorElement | null
   const tag = t.closest('[data-jelto-event]:not(form)') as HTMLElement | null
   // Preserve modifier, middle-button and new-tab navigation.
-  const other = ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1 || a?.target === '_blank'
+  const other = ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1 || !!a?.target
 
   let dl = false
-  if (a) {
+  // Download handling (and its `?jl=` rewrite) applies only to a resolved
+  // http(s) URL: a data:/blob: href has no real pathname or navigation to
+  // decorate, and its "path" is the payload itself.
+  if (a && /^https?:$/.test(a.protocol)) {
     const p = a.pathname
     const lower = p.toLowerCase()
     dl = a.hasAttribute('download') || c.fileTypes.some((x) => lower.endsWith('.' + x))
@@ -36,7 +39,7 @@ function click(ev: MouseEvent): void {
       const before = previous?.[1] === a.href ? previous[0] : a.href
       a.href = decorate(before)
       rewritten.set(a, [before, a.href])
-    } else if (a.hostname && a.hostname !== location.hostname) {
+    } else if (a.hostname !== location.hostname) {
       fire({ n: 'click:outbound', props: { url: a.hostname } })
     }
   }

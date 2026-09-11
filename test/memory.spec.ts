@@ -1,11 +1,11 @@
-// spec/snippet.md §4 — B15's attribution memory and B8's storage promise.
+// Attribution memory and the storage-free promise when memory is disabled.
 // T27, T28, T29, T30, T31, T32.
 
 import { test, expect } from './fixtures'
 import { SITE_ORIGIN } from './harness/site'
 import { lifecycle, spyOnStorage, storageCalls } from './harness/browser'
 
-/** Seeds B15's entry before the snippet runs. */
+/** Seeds the attribution-memory entry before the snippet runs. */
 async function seed(page: import('@playwright/test').Page, value: string): Promise<void> {
   await page.addInitScript((v: string) => {
     try {
@@ -41,8 +41,8 @@ test('T28 — first touch is stored, then carried as f/fd and as jl=…&jt=first
 
   await page.clock.setFixedTime(new Date('2026-08-02T10:00:00Z'))
   await site.goto('/pricing')
-  // Three, not two: leaving the first page ends its pageview, so B17's
-  // engagement for it is on the wire between the two pageviews.
+  // Three, not two: leaving the first page ends its pageview, so its engagement
+  // is on the wire between the two pageviews.
   const events = await mockd.awaitEvents(3)
   const pricing = events.find((e) => e.n === 'pageview' && e.u === SITE_ORIGIN + '/pricing')!
   expect(pricing.f).toBe('producthunt')

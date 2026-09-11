@@ -1,5 +1,5 @@
 // A Node driver for spec/conformance/mockd -- the same mock endpoint the SDK
-// conformance suite drives against, used here as spec/snippet.md §4 requires.
+// conformance suite drives against, used here to drive every wire-level test in this suite.
 //
 // The control channel is mockd's unix socket: JSON values in, exactly one
 // reply object out per command, in order (spec/conformance/mockd/control.go).
@@ -41,7 +41,7 @@ export interface WireEvent {
   e?: number
   sd?: number
   i?: boolean
-  /** spec/snippet.md §7 C4, cookie mode only. Absent from every body
+  /** Cookie mode only. Absent from every body
    *  `jelto.js` produces, under every configuration. */
   vid?: string
   props?: Record<string, string | number | boolean>

@@ -30,7 +30,9 @@ export function initPage(c: Config): void {
   g.jelto = api
   const buffered = stub && stub.q
   if (buffered) {
-    for (const call of buffered) api.apply(0, call)
+    try {
+      for (const call of buffered) api.apply(0, call)
+    } catch {}
     buffered.length = 0
   }
 
@@ -55,7 +57,7 @@ export function initPage(c: Config): void {
   else pageview()
 }
 
-/** B1: a prerendered or background tab waits, and fires once. */
+/** A prerendered or background tab waits, and fires once. */
 function shown(): void {
   if (!document.hidden) {
     removeEventListener('visibilitychange', shown)
@@ -86,8 +88,8 @@ function moved(): void {
   changed()
   timer = setTimeout(() => {
     const u = pageUrl(cfg)
-    // A router may leave and return before its URL settles. Preserve B9's
-    // unchanged-page rule and resume the original helper context in that case.
+    // A router may leave and return before its URL settles. Preserve the unchanged-page
+    // rule and resume the original helper context in that case.
     if (u == cur && pageviewId) { active = true; changed() }
     else pageview({ u, r: cur })
   }, 300)
@@ -116,7 +118,7 @@ export function pageview(opts?: { u?: string; r?: string }): void {
       w: screen.width,
     })) { active = false; changed(); return }
     // Write first-touch memory after sending, so newly stored attribution applies to
-    // subsequent events (B15, T29).
+    // subsequent events.
     remember()
     cur = u
     pageviewId = id

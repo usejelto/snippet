@@ -16,7 +16,7 @@
     "build": "node build.mjs",
     "check": "tsc --noEmit",
     "test": "npm run test:source && playwright test",
-    "test:source": "node --test checks/source-boundaries.test.mjs"
+    "test:source": "node --test checks/source-boundaries.test.mjs checks/bundle-guards.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

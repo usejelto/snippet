@@ -1,4 +1,4 @@
-// spec/snippet.md §4 — the pageview, skip-rule and lifecycle cases.
+// The pageview, skip-rule and lifecycle cases.
 // T1, T1b, T1c, T1d, T2, T3, T4, T5c, T14, T14b, T15, T41, T42, T43, T44.
 
 import { test, expect } from './fixtures'
@@ -53,7 +53,7 @@ test('T1c — a bfcache restore sends a second pageview on pageshow', async ({ p
   await mockd.awaitEvents(1)
 
   // A real bfcache round trip hides the page before it restores it, so the
-  // outgoing pageview's engagement goes out at `pagehide` (B17) and the
+  // outgoing pageview's engagement goes out at `pagehide` and the
   // restore is a clean second pageview.
   await pagehide(page)
   await pageshow(page, true)
@@ -225,7 +225,7 @@ test('T41 — data-auto-pageview="off": nothing on load or pushState, two manual
 
   const names = events.map((e) => e.n)
   expect(names.filter((n) => n === 'pageview')).toHaveLength(2)
-  // B17: the outgoing pageview's engagement is on the wire BEFORE the
+  // The outgoing pageview's engagement is on the wire BEFORE the
   // pageview that replaces it.
   const engagement = names.indexOf('engagement')
   expect(engagement, 'an engagement for the first pv').toBeGreaterThan(-1)

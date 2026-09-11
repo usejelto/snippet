@@ -10,7 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 
 export const SITE_ORIGIN = 'https://site.example'
 export const CDN = 'https://cdn.jelto.example/jelto.js'
-/** Cookie mode must use its distinct shipped filename (spec/snippet.md §7). */
+/** Cookie mode must use its distinct shipped filename. */
 export const CDN_COOKIE = 'https://cdn.jelto.example/jelto.cookie.js'
 
 /** Each served URL and the built file it answers with. Served from disk so
@@ -41,7 +41,7 @@ export interface PageSpec {
   /** false serves the page with no snippet tag at all (a referring page). */
   snippet?: boolean
   /** Which built bundle this page's tag points at. Defaults to `Site.bundle`,
-   *  which defaults to `CDN` -- so every §4 case keeps running against
+   *  which defaults to `CDN` -- so every case keeps running against
    *  `jelto.js` and only `jelto.js` without saying so. */
   src?: string
 }
@@ -73,8 +73,8 @@ export class Site {
   }
 
   /**
-   * Registers a JavaScript file served from the SITE's own origin -- what §1
-   * means by the page installing the queue stub "in its own bundle, a file
+   * Registers a JavaScript file served from the SITE's own origin -- what the queue-stub
+   * rule means by the page installing the queue stub "in its own bundle, a file
    * served from the page's own origin, which `script-src 'self'` already
    * allows". T13 and T49b need it to be that and not an inline script.
    */

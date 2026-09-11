@@ -9,7 +9,7 @@ export interface PageContext { active: boolean; pageviewId: string | null; url: 
 
 /** One event on the wire. §3's common fields plus §5.1's web fields. */
 export interface Ev {
-  /** §3 `id`: UUIDv7 where available, else v4 (B12). Never the nil UUID. */
+  /** §3 `id`: UUIDv7 where available, else v4. Never the nil UUID. */
   id: string
   /** §3 `n`: `^[a-z0-9_:.-]{1,64}$`. */
   n: string
@@ -53,7 +53,7 @@ export interface Outgoing {
   sd?: number
 }
 
-/** The `<script>` tag's `data-*` attributes, resolved. spec/snippet.md §1. */
+/** The `<script>` tag's `data-*` attributes, resolved. */
 export interface Config {
   /** `data-product`, `^prd_[a-z0-9]{10}$` is the server's business. */
   product: string
@@ -61,17 +61,17 @@ export interface Config {
   endpoint: string
   /** `data-hash`: the fragment is part of the page identity. */
   hash: boolean
-  /** `data-spa="off"` sets this false. B9. */
+  /** `data-spa="off"` sets this false. */
   spa: boolean
-  /** `data-exclude`, split on commas. B2. */
+  /** `data-exclude`, split on commas. */
   exclude: string[]
-  /** `data-file-types`, lower-cased, without dots; B3's default list when
+  /** `data-file-types`, lower-cased, without dots; the built-in default list when
    *  the attribute is absent. */
   fileTypes: string[]
-  /** `data-allow-localhost`. B2. */
+  /** `data-allow-localhost`. */
   allowLocalhost: boolean
-  /** `data-memory="on"`. B15. */
+  /** `data-memory="on"`. */
   memory: boolean
-  /** `data-auto-pageview="off"` sets this false. B18. */
+  /** `data-auto-pageview="off"` sets this false. */
   autoPageview: boolean
 }

@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test'
 
 declare global {
   interface Window {
-    /** The snippet's own API (B6). `q` is §1's pre-load queue stub, which the
+    /** The snippet's own API. `q` is the pre-load queue stub, which the
      *  PAGE installs and the snippet drains -- never the other way round. */
     jelto: ((...args: unknown[]) => unknown) & { q?: IArguments[] }
     __jelto: {
@@ -86,10 +86,10 @@ export const pageshow = (page: Page, persisted = true): Promise<void> =>
   page.evaluate((p: boolean) => window.__jelto.pageshow(p), persisted)
 
 /**
- * Makes the document `n` viewports tall, or shorter than one. B16 divides by
+ * Makes the document `n` viewports tall, or shorter than one. Scroll depth divides by
  * the height measured at send time, so a test that grows the page must grow
  * something a real layout would report -- this sets an explicit pixel height
- * on a block in the body rather than touching any of the APIs B16 reads.
+ * on a block in the body rather than touching any of the height APIs that computation reads.
  */
 export async function setDocumentHeight(page: Page, viewports: number): Promise<void> {
   await page.evaluate((n: number) => {
@@ -157,7 +157,7 @@ export const storageCalls = (page: Page): Promise<string[]> =>
 /**
  * A browser that silently REFUSES cookies: the setter runs and stores nothing,
  * which is what third-party blocking, partitioned storage and a visitor's own
- * setting all look like from inside the page. §7 TC4's subject.
+ * setting all look like from inside the page. TC4's subject.
  */
 export async function refuseCookies(page: Page): Promise<void> {
   await page.addInitScript(() => {

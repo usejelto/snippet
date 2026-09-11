@@ -89,7 +89,9 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   } as API
   const pending = api.q || []
   api.q = []
-  for (const call of pending) if (call[0] === 'payment') payment(call[1])
+  try {
+    for (const call of pending) if (call[0] === 'payment') payment(call[1])
+  } catch {}
   if (tag.dataset.disablePayments !== 'true' && mainTag?.dataset.disablePayments !== 'true') {
     const fields = ['session_id', 'order_id', 'checkout_id'] as const
     const patterns = [/^cs_(live|test)_[A-Za-z0-9]{1,240}$/, /^[1-9][0-9]{0,19}$/, /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i]

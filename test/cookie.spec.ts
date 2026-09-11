@@ -1,15 +1,14 @@
-// spec/snippet.md §7 — the opt-in cookie mode, `jelto.cookie.js`.
+// The opt-in cookie mode, `jelto.cookie.js`.
 // TC1, TC2, TC3, TC4, TC5, TC6, TC7, TC8, TC9, TC10.
 //
 // WHICH CASES RUN AGAINST WHICH FILE, decided here and stated once.
 //
-// Every case in §4 — T1 through T49b — runs against `jelto.js` and only
-// `jelto.js`. None of them is re-pointed at the cookie build, parameterised
-// over both, or weakened to hold for either. That is
-// spec/snippet.md §7 boundary 1 as a test policy:
-// its first reason is that the cookieless bundle does not move, and a suite
-// that re-ran §4's claims against a second build would be describing a
-// different product's behaviour under the same case numbers.
+// Every pageview, click, engagement and transport case elsewhere in this suite runs
+// against `jelto.js` and only `jelto.js`. None of them is re-pointed at the cookie build,
+// parameterised over both, or weakened to hold for either. That is a direct consequence of
+// the cookieless bundle being required to stay byte-identical whether or not the cookie
+// build is enabled: a suite that re-ran those claims against a second build would be
+// describing a different product's behaviour under the same case numbers.
 //
 // The cookie build gets its own cases, here, and they are about the one thing
 // that differs. TC5 is the one to read twice: it is T27's mirror for a build
@@ -32,11 +31,11 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 /** spec/wire-v1.md §5.1's grammar for `vid`, written out here rather than
  *  imported, so the browser-side value is checked against the WIRE's rule and
  *  not against whatever the snippet happens to produce. It is deliberately a
- *  shape no UUID can satisfy — that is boundary 2 made checkable, since
- *  `install_id` is a UUID. */
+ *  shape no UUID can satisfy — that is the vid/install_id boundary made checkable,
+ *  since `install_id` is a UUID. */
 const VID = /^[A-Za-z0-9_-]{22}$/
 
-/** Thirteen months, in seconds. §7 C2. */
+/** Thirteen months, in seconds: the cookie's fixed lifetime. */
 const THIRTEEN_MONTHS = 34128e3
 
 const jar = async (page: import('@playwright/test').Page, name = 'jelto_vid') =>
@@ -78,15 +77,14 @@ test('TC2 — a returning browser keeps its id, and the cookie is not rewritten'
   expect((await storageCalls(page)).filter((c) => c === 'cookie.set')).toHaveLength(1)
 
   await site.goto('/pricing')
-  // Three, not two: leaving the first page ends its pageview, so B17's
-  // engagement for it is on the wire between the two pageviews — cookie mode
-  // changes nothing about that.
+  // Three, not two: leaving the first page ends its pageview, so its engagement
+  // is on the wire between the two pageviews — cookie mode changes nothing about that.
   const events = await mockd.awaitEvents(3)
   const second = events.find((e) => e.n === 'pageview' && e.u === SITE_ORIGIN + '/pricing')!
 
   expect(second.vid).toBe(first[0]!.vid)
   expect((await jar(page))!.value).toBe(minted)
-  // §7 C2: the lifetime is FIXED at first set and never extended, so a browser
+  // The lifetime is FIXED at first set and never extended, so a browser
   // that visits every day for a year still loses the cookie thirteen months
   // after the FIRST visit. A rolling expiry would make the disclosed duration
   // "thirteen months after you stop coming", which is not what it says.
@@ -94,8 +92,8 @@ test('TC2 — a returning browser keeps its id, and the cookie is not rewritten'
   // AND THE RULE STATED DIRECTLY: the returning visit writes nothing. Checking
   // only the value and the expiry would also pass on a build that rewrote the
   // cookie with the same value and a fresh max-age, which is the rolling
-  // lifetime §7 C2 refuses -- the jar would look identical for thirteen months
-  // and differ only for a visitor who had stopped coming.
+  // lifetime this fixed-expiry rule refuses -- the jar would look identical for thirteen
+  // months and differ only for a visitor who had stopped coming.
   const onReturn = await storageCalls(page)
   expect(onReturn).toContain('cookie.get')
   expect(onReturn.filter((c) => c === 'cookie.set')).toHaveLength(0)
@@ -116,19 +114,19 @@ test('TC3 — the cookie is host-only, path=/, SameSite=Lax, Secure, and lasts t
   const cookie = (await jar(page))!
   expect(cookie.path).toBe('/')
   expect(cookie.sameSite).toBe('Lax')
-  // The fixture site is https, so `secure` is set. §7 C3 omits it on http
+  // The fixture site is https, so `secure` is set. Cookie mode omits it on http
   // rather than shipping a cookie the browser silently discards.
   expect(cookie.secure).toBe(true)
   // Host-only: no leading-dot domain, so it does not reach subdomains.
   expect(cookie.domain).toBe('site.example')
-  // Not HttpOnly, and cannot be: it is written by script (§7 C6).
+  // Not HttpOnly, and cannot be: it is written by script.
   expect(cookie.httpOnly).toBe(false)
 
   const lifetime = cookie.expires - Date.now() / 1000
   expect(lifetime).toBeGreaterThan(THIRTEEN_MONTHS - 300)
   expect(lifetime).toBeLessThan(THIRTEEN_MONTHS + 300)
-  // §7 C2's other half, and the reason the number is 395 days and not "two
-  // years": Chrome caps a cookie's lifetime at 400 days and truncates silently.
+  // The other half of the fixed-lifetime rule, and the reason the number is 395 days and
+  // not "two years": Chrome caps a cookie's lifetime at 400 days and truncates silently.
   // A longer figure would be disclosed to visitors and not honoured by the
   // browser, which is a false statement published under the customer's name.
   expect(lifetime).toBeLessThan(400 * 86400)
@@ -153,8 +151,8 @@ test('TC4 — a browser that refuses the cookie sends no vid at all, never a fre
   expect(await jar(page), 'the refusing jar stored something after all').toBeUndefined()
   // THE POINT OF THE CASE. A minted id that is not read back would be a new
   // random value on every pageview, and `visitors` — labelled "unique
-  // visitors" in this mode — would count PAGEVIEWS. spec/metrics.md §5 forbids
-  // a number that is not true, and this is the failure that is invisible from
+  // visitors" in this mode — would count PAGEVIEWS. A reported metric must never be a
+  // number that is not true, and this is the failure that is invisible from
   // the server: a thousand one-page visitors and a thousand refusals are the
   // same rows. So the assertion is not merely "no vid", it is "no two vids".
   for (const event of events) expect(event).not.toHaveProperty('vid')
@@ -177,9 +175,9 @@ test('TC5 — the cookie build touches the cookie and NO other storage API', asy
   )
   await mockd.awaitEvents(2)
 
-  // T27's mirror. `data-memory` is absent, so B15's localStorage branch does
+  // T27's mirror. `data-memory` is absent, so the localStorage branch does
   // not exist in this code path either — the cookie build adds a cookie, it
-  // does not lift the rest of B8.
+  // does not lift the rest of the storage-free promise.
   const calls = await storageCalls(page)
   expect(new Set(calls)).toEqual(new Set(['cookie.get', 'cookie.set']))
   for (const name of ['localStorage', 'sessionStorage', 'indexedDB', 'caches']) {
@@ -219,9 +217,9 @@ test('TC7 — B2 still rules: on localhost nothing is sent AND no cookie is set'
   site.defaults({})
   await site.goto('http://localhost:3000/')
 
-  // B2 blocks before anything is installed (index.ts), so the cookie is not
-  // written either. A build that read its cookie first and checked B2 second
-  // would set an identifier on a page it then refuses to report — storage
+  // The localhost/exclusion block happens before anything is installed (index.ts), so the
+  // cookie is not written either. A build that read its cookie first and checked that
+  // block second would set an identifier on a page it then refuses to report — storage
   // written for a visit that produces no row at all.
   expect(await mockd.quiet()).toEqual([])
   expect(await jar(page)).toBeUndefined()
@@ -262,12 +260,13 @@ test('TC9 — every cookie-mode body validates against spec/wire-v1.schema.json'
   validateAgainstSchema(await mockd.bodies())
 })
 
-test('TC10 — jelto.cookie.js is within spec/snippet.md §7\'s gzipped budget', () => {
-  // 3 218 B = §1's 3 000 B ceiling for the shared source plus the 218 B the
-  // mode measured at its first build. The cookie bundle therefore has exactly
-  // the headroom §1 already grants and none of its own: a new cookie-only rule
-  // reopens §7, and a change to the shared source is refused by §1's gate
-  // first. The number is here, in build.mjs and in §7, and nowhere else.
+test('TC10 — jelto.cookie.js is within its gzipped budget', () => {
+  // 3 218 B = the 3 000 B ceiling for the shared source plus the 218 B the
+  // cookie mode measured at its first build. The cookie bundle therefore has exactly
+  // the headroom the shared-source budget already grants and none of its own: a new
+  // cookie-only rule reopens the cookie-mode budget, and a change to the shared source
+  // is refused by the shared-source budget's gate first. The number is here and in
+  // build.mjs, and nowhere else.
   const BUDGET = 3518
   const bundle = readFileSync(path.resolve(here, '../dist/jelto.cookie.js'))
   const gzipped = gzipSync(bundle, { level: 9 }).length

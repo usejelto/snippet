@@ -1,4 +1,4 @@
-// Cookie-mode visitor identity (spec/snippet.md §7). The build removes this module from
+// Cookie-mode visitor identity. The build removes this module from
 // jelto.js and verifies that in both emitted bytes and the module graph.
 
 const NAME = 'jelto_vid'
@@ -18,7 +18,7 @@ export function initVid(): void {
   } catch {}
 }
 
-/** §7 C4: the value of `vid`, or `""` when no field is to be sent. */
+/** The value of `vid`, or `""` when no field is to be sent. */
 export function vid(): string {
   return id
 }

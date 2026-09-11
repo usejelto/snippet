@@ -1,4 +1,4 @@
-// spec/snippet.md §4 — B19, the checkout hand-off accessor.
+// The checkout hand-off accessor (jelto('cohort')).
 // T45, T46, T47, T48, T49, T49b.
 
 import { test, expect } from './fixtures'
@@ -23,14 +23,14 @@ test('T46 — the UTM cohort is the same string T5 puts in jl', async ({ page, s
 
   expect(await page.evaluate(() => window.jelto('cohort'))).toBe('producthunt~social')
 
-  // The same value, from the same computation, on the link B3 rewrites.
+  // The same value, from the same computation, on the link the click handler rewrites.
   await page.evaluate(() =>
     document.getElementById('dl')!.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 })),
   )
   // The RESOLVED href, which is what the navigation uses and what T5 pins as
-  // the navigation URL. B3 says "append `jl` to the href"; it does not require
-  // a relative attribute to stay relative, and writing back the absolute form
-  // is what `a.href = …` does.
+  // the navigation URL. The download-decoration rule says "append `jl` to the href"; it
+  // does not require a relative attribute to stay relative, and writing back the absolute
+  // form is what `a.href = …` does.
   const href = await page.evaluate(() => (document.getElementById('dl') as HTMLAnchorElement).href)
   expect(href).toBe('https://site.example/dl/App.pkg?jl=producthunt~social')
 })
@@ -84,10 +84,10 @@ test('T49b — with the stub, the call is queued and never returns a label', asy
   site.defaults({ head: '<script src="/app.js"></script>', attrs: { autoPageview: 'off' } })
   await site.goto('/?utm_source=producthunt')
 
-  // §1's printed stub pushes onto `q` and does not return the push, so the
-  // answer is `undefined`. What B19 makes normative is the part that holds for
-  // any stub the page might write: never a label. Through v0.9 this rule said
-  // "the stub's push() result, an integer", which §1's own stub does not
+  // The pre-load queue stub pushes onto `q` and does not return the push, so the
+  // answer is `undefined`. What the checkout accessor's contract makes normative is the part
+  // that holds for any stub the page might write: never a label. Through v0.9 this rule said
+  // "the stub's push() result, an integer", which that stub does not
   // return -- corrected in v0.10, and this is the case that found it.
   const value = await page.evaluate(() => (window as unknown as { __value: unknown }).__value)
   expect(value).toBeUndefined()

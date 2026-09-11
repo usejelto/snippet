@@ -96,7 +96,7 @@ export function flush(force?: boolean, count = Math.min(q.length, 100)): void {
     }
     last = now
     q.splice(0, count)
-    // B7: `sendBeacon` only when `fetch` is absent. No headers, so the body
+    // `sendBeacon` only when `fetch` is absent. No headers, so the body
     // goes as `text/plain;charset=UTF-8` (wire §1) and the POST stays a CORS
     // simple request with no preflight.
     if (typeof fetch == 'function') {

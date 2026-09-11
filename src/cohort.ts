@@ -1,4 +1,4 @@
-// Storage must never be accessed unless data-memory="on" (spec/snippet.md B15).
+// Storage must never be accessed unless data-memory="on".
 
 import type { Config } from './types'
 
@@ -11,12 +11,12 @@ export function initCohort(x: Config): void {
   c = x
 }
 
-/** §3's `clean`: lower-case, keep `[a-z0-9._-]`, truncate the segment to 64. */
+/** Clean a cohort label component: lower-case, keep `[a-z0-9._-]`, truncate the segment to 64. */
 function clean(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 64)
 }
 
-/** §3 without the memory branch: this page's own last touch, or `''`. */
+/** The cohort computation without the memory branch: this page's own last touch, or `''`. */
 function own(): string {
   const q = new URLSearchParams(location.search)
   const src = q.get('utm_source') || q.get('ref') || q.get('source') || q.get('via')
@@ -38,7 +38,7 @@ function own(): string {
   return ''
 }
 
-/** Today, `YYYY-MM-DD`, the form B15 stores. */
+/** Today, `YYYY-MM-DD`, the form attribution memory stores. */
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }

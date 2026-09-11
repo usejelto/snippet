@@ -1,5 +1,5 @@
 // Send pageview totals, never deltas: the server reduces engagement by pv using max(e)
-// and the last sd (spec/metrics.md §4.1b).
+// and the last sd it received.
 
 import type { Config } from './types'
 import { send, flush } from './send'
@@ -8,7 +8,7 @@ let pv = '' // the live pageview's `id`; '' once it has been replaced
 let url = ''
 let eng = 0 // engaged ms banked while the clock was last stopped
 let mark = -1 // performance.now() when the clock started; -1 = stopped
-let reach = 0 // B16's pixel maximum, NEVER a percentage
+let reach = 0 // the scroll-reach pixel maximum, NEVER a percentage
 let sentE = 0 // `e` of the last engagement sent for this `pv`
 let sentSd = -1 // its `sd`; -1 = none sent yet
 let raf = 0
@@ -27,7 +27,7 @@ function stop(): void {
   mark = -1
 }
 
-/** B16: `reach = max(reach, scrollY + innerHeight)`, in pixels. */
+/** The scroll-reach maximum: `reach = max(reach, scrollY + innerHeight)`, in pixels. */
 function sample(): void {
   const r = scrollY + innerHeight
   if (r > reach) reach = r
@@ -44,7 +44,8 @@ function height(): number {
 }
 
 // `m`: 0 = a replacing pageview, 1 = hidden or `pagehide`, 2 = focus loss.
-// Only 2 is volume-gated (B17); 1 and 2 flush at once (B7).
+// Only focus loss (`m === 2`) is subject to the volume gate below; hidden and focus loss
+// both flush the outgoing batch immediately.
 function fire(m: number): void {
   if (!pv) return
   sample()

@@ -1,4 +1,4 @@
-// spec/snippet.md §4 — the transport, queue-stub, budget and schema cases.
+// The transport, queue-stub, budget and schema cases.
 // T13, T13b, T16, T17, T18, T19, T20, T22, T25.
 
 import { test, expect, validateAgainstSchema } from './fixtures'
@@ -11,8 +11,8 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
-// §1's stub, verbatim. It ships in the PAGE's own bundle and never inline --
-// §6's CSP carries neither 'unsafe-inline' nor a nonce.
+// The pre-load queue stub, verbatim. It ships in the PAGE's own bundle and never inline --
+// the CSP-safety rule carries neither 'unsafe-inline' nor a nonce.
 const STUB = `window.jelto = window.jelto || function () { (window.jelto.q = window.jelto.q || []).push(arguments) }`
 
 test('T13 — a call buffered by §1\'s stub is drained once after load', async ({ page, site, mockd }) => {
@@ -28,9 +28,29 @@ test('T13 — a call buffered by §1\'s stub is drained once after load', async 
   const signups = events.filter((e) => e.n === 'signup')
   expect(signups).toHaveLength(1)
   expect(signups[0]!.props).toEqual({ plan: 'pro' })
-  // Draining empties the queue, so a stub loaded twice does not re-send (B6).
+  // Draining empties the queue, so a stub loaded twice does not re-send.
   expect(await page.evaluate(() => window.jelto.q?.length ?? 0)).toBe(0)
   expect(await page.evaluate(() => typeof window.jelto)).toBe('function')
+})
+
+test('T13 — a null or non-array-like entry in the pre-load queue is skipped without throwing, and the pageview still sends', async ({
+  page,
+  site,
+  mockd,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await lifecycle(page)
+  await page.addInitScript(() => {
+    ;(window as unknown as { jelto: unknown }).jelto = { q: [null, 5] }
+  })
+  await site.install()
+  site.defaults({})
+  await site.goto('/')
+
+  const events = await mockd.awaitEvents(1)
+  expect(events.some((e) => e.n === 'pageview')).toBe(true)
+  expect(errors).toEqual([])
 })
 
 test('T13b — without the stub, window.jelto is undefined before load and the page\'s own call throws', async ({
@@ -62,7 +82,7 @@ test('T13b — without the stub, window.jelto is undefined before load and the p
 
 test('T16 — a 500 is not retried and logs nothing', async ({ page, site, mockd }) => {
   const errors: string[] = []
-  // What B11 forbids is the SNIPPET logging or throwing. A failed HTTP request
+  // What the snippet must never do is log or throw. A failed HTTP request
   // also produces "Failed to load resource: …" from Chromium's own network
   // stack, with the request URL as its location and no JS frame at all -- it is
   // emitted for `fetch`, for `sendBeacon` and for an `<img>` alike, and no
@@ -97,8 +117,8 @@ test('T16 — a refused connection is not retried and logs nothing', async ({ pa
   await new Promise((r) => setTimeout(r, 3_000))
 
   // A failed fetch logs to the console from the network stack itself, which
-  // the snippet cannot suppress; what B11 forbids is the snippet THROWING
-  // into the page or logging of its own.
+  // the snippet cannot suppress; the snippet itself must never THROW
+  // into the page or log anything of its own.
   expect(errors).toEqual([])
 })
 
@@ -240,8 +260,8 @@ test('T19 — a pending batch is delivered on visibilitychange -> hidden', async
   expect(events.map((e) => e.n)).toContain('queued')
 })
 
-test('T20 — the bundle is within spec/snippet.md §1\'s gzipped budget', () => {
-  // spec/advanced-features.md §1's approved shared-source ceiling.
+test('T20 — the bundle is within its gzipped budget', () => {
+  // The approved shared-source ceiling.
   const BUDGET = 3300
   const bundle = readFileSync(path.resolve(here, '../dist/jelto.js'))
   const gzipped = gzipSync(bundle, { level: 9 }).length

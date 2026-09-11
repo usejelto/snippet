@@ -1,6 +1,6 @@
 // Build both tracking modes from one source and verify their emitted bytes and budgets.
-// Budgets are defined in spec/advanced-features.md §1; measure.mjs reports per-rule
-// costs.
+// Budgets are defined by the shared-source and cookie-mode ceilings below; measure.mjs
+// reports per-rule costs.
 // esbuild emits a dependency-free IIFE without a loader or preload shim.
 import { gzipSync } from 'node:zlib'
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs'
@@ -20,22 +20,22 @@ const CLIENT_VERSION = 'web/' + pkg.version
 // The budget override exercises the guard in tests and applies to both variants.
 const budgetFlag = process.argv.indexOf('--budget')
 const OVERRIDE = budgetFlag === -1 ? null : Number(process.argv[budgetFlag + 1])
+if (budgetFlag !== -1 && !Number.isFinite(OVERRIDE)) throw new Error('--budget needs a number')
 
 const VARIANTS = [
   {
     file: 'jelto.js',
     cookie: false,
     budget: 3300,
-    spec: 'spec/snippet.md §1',
+    rule: 'core bundle budget',
     what: 'the default build, cookieless',
   },
   {
     file: 'jelto.cookie.js',
     cookie: true,
-    // Shared-source ceiling plus the measured 218-byte cookie-mode cost
-    // (advanced-features §1).
+    // Shared-source ceiling plus the measured 218-byte cookie-mode cost.
     budget: 3518,
-    spec: 'spec/snippet.md §7',
+    rule: 'cookie-mode bundle budget',
     what: 'the opt-in cookie mode',
   },
 ]
@@ -94,7 +94,7 @@ const FORBIDDEN = [
   ['new Function(', /\bnew\s+Function\s*\(/],
 ]
 
-// Verify that only the cookie bundle contains cookie code (spec/snippet.md §7).
+// Verify that only the cookie bundle contains cookie code.
 const COOKIE_CODE = /document\s*\.\s*cookie/
 const COOKIE_NAME = /jelto_vid/
 const COOKIE_MODULE = /(^|\/)vid\.ts$/
@@ -106,7 +106,7 @@ const promisesCookie = (file) => /\.cookie\./.test(file)
 for (const b of built) {
   const text = b.raw.toString('utf8')
   for (const [name, re] of FORBIDDEN) {
-    if (re.test(text)) fail(`make snippet: §6 forbids ${name} in the emitted ${b.file}\n`)
+    if (re.test(text)) fail(`make snippet: the CSP-safety rule forbids ${name} in the emitted ${b.file}\n`)
   }
 
   const hasCode = COOKIE_CODE.test(text)
@@ -120,17 +120,18 @@ for (const b of built) {
       fail(
         `make snippet: ${b.file} is the COOKIE build and does not carry cookie mode ` +
           `(document.cookie: ${hasCode}, ${'jelto_vid'}: ${hasName}, src/vid.ts in graph: ${hasModule}).\n` +
-          `  It is the cookieless bundle under the cookie name. spec/snippet.md §7: a site loading\n` +
-          `  this file publishes that it sets a cookie, so shipping it setting none is a false\n` +
-          `  statement made under the customer's name and cached for a day.\n`,
+          `  It is the cookieless bundle under the cookie name. A site loading this file publishes\n` +
+          `  that it sets a cookie, so shipping it setting none is a false statement made under\n` +
+          `  the customer's name and cached for a day.\n`,
       )
     }
   } else if (hasCode || hasName || hasModule) {
     fail(
       `make snippet: ${b.file} is the DEFAULT build and carries cookie code ` +
         `(document.cookie: ${hasCode}, ${'jelto_vid'}: ${hasName}, src/vid.ts in graph: ${hasModule}).\n` +
-        `  spec/snippet.md §7 boundary 1: the cookieless bundle does not move. __JELTO_COOKIE__ must be\n` +
-        `  a literal \`false\` here so esbuild folds the branch and drops the module.\n`,
+        `  The cookieless bundle must be byte-identical whether or not the cookie build is\n` +
+        `  enabled. __JELTO_COOKIE__ must be a literal \`false\` here so esbuild folds the branch\n` +
+        `  and drops the module.\n`,
     )
   }
 
@@ -138,11 +139,11 @@ for (const b of built) {
   const pct = ((b.gzipped / budget) * 100).toFixed(1)
   process.stdout.write(
     `  ${b.file.padEnd(44)}${String(b.raw.length).padStart(8)} B raw   (${b.what})\n` +
-      `  ${' '.repeat(42)}${String(b.gzipped).padStart(8)} B gzipped of ${budget} B (${b.spec}) — ${pct} %\n`,
+      `  ${' '.repeat(42)}${String(b.gzipped).padStart(8)} B gzipped of ${budget} B (${b.rule}) — ${pct} %\n`,
   )
   if (b.gzipped > budget) {
     fail(
-      `make snippet: ${b.file} is over ${b.spec}'s budget by ${b.gzipped - budget} B.\n` +
+      `make snippet: ${b.file} is over its ${b.rule} by ${b.gzipped - budget} B.\n` +
         `  The number is re-argued in the SPEC against this measurement, in its own commit.\n` +
         `  It is not raised here to match what the code turned out to weigh.\n`,
     )
@@ -163,11 +164,15 @@ for (const name of extensions) {
   await esbuild.build({ entryPoints: [path.join(here, `src/${name}-extension.ts`)], outfile,
     bundle: true, minify: true, format: 'iife', target: ['safari16', 'chrome109', 'firefox115'], legalComments: 'none' })
   const raw = readFileSync(outfile)
+  const text = raw.toString('utf8')
   const size = gzipSync(raw, { level: 9 }).length
   process.stdout.write(`  ${file}: ${size} B gzipped (optional, budget 2000 B)\n`)
-  // Checkout may retain only bounded aggregate channel context in this tab
-  // (settings-onboarding §3.1); the visibility helper remains storage-free.
-  if (size > 2000 || COOKIE_CODE.test(raw.toString()) || /localStorage/.test(raw.toString()) || (!['checkout', 'entry'].includes(name) && /sessionStorage/.test(raw.toString()))) fail(`${file} violates extension size/storage contract\n`)
+  for (const [fname, re] of FORBIDDEN) {
+    if (re.test(text)) fail(`make snippet: the CSP-safety rule forbids ${fname} in the emitted ${file}\n`)
+  }
+  // Checkout may retain only bounded aggregate channel context in this tab; the visibility
+  // helper remains storage-free.
+  if (size > 2000 || COOKIE_CODE.test(text) || /localStorage|indexedDB|\bcaches\b/.test(text) || (!['checkout', 'entry'].includes(name) && /sessionStorage/.test(text))) fail(`${file} violates extension size/storage contract\n`)
 }
 const expected = new Set([...VARIANTS.map((v) => v.file), ...extensions.map(name => `jelto.${name}.js`)])
 const stray = readdirSync(outdir).filter((f) => !expected.has(f))

@@ -1,8 +1,8 @@
-// Read snippet configuration from its script tag (spec/snippet.md §1).
+// Read snippet configuration from its script tag.
 
 import type { Config } from './types'
 
-/** B3's default download extensions, replaced wholesale by `data-file-types`. */
+/** The built-in default download extensions, replaced wholesale by `data-file-types`. */
 const FILE_TYPES = 'dmg pkg zip exe msi appimage deb rpm tar.gz snap'
 
 /** Return null when data-product is missing, disabling initialization. */
@@ -79,12 +79,12 @@ export function pageUrl(c: Config): string {
   return c.hash ? location.href : location.href.split('#')[0]!
 }
 
-/** The string B2's globs are matched against: pathname, plus hash in hash mode. */
+/** The string the exclusion globs are matched against: pathname, plus hash in hash mode. */
 export function pagePath(c: Config): string {
   return location.pathname + (c.hash ? location.hash : '')
 }
 
-/** The same, for an absolute URL that is not `location` -- B18's supplied `u`. */
+/** The same, for an absolute URL that is not `location` -- the pageview API's supplied `u`. */
 export function urlPath(c: Config, absolute: string): string {
   const u = new URL(absolute)
   return u.pathname + (c.hash ? u.hash : '')

@@ -1,5 +1,5 @@
 // Builds the two things every test needs before the first one runs: the
-// snippet bundle itself, and the `mockd` binary spec/snippet.md §4 names as
+// snippet bundle itself, and the `mockd` binary this suite uses as
 // the endpoint.
 //
 // The bundle is built rather than assumed present, because a suite that
@@ -16,7 +16,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 export const SNIPPET_DIR = path.resolve(here, '..')
 
 export default function globalSetup(): void {
-  // Built with the budget lifted, deliberately. §4 makes the budget a TEST
+  // Built with the budget lifted, deliberately. The budget is itself a TEST
   // CASE -- T20, in test/transport.spec.ts -- and a global setup that refused
   // to build an over-budget bundle would report one failure ("setup failed")
   // where the suite has fifty-nine other answers to give. `make snippet` is

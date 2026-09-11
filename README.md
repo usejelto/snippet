@@ -66,6 +66,15 @@ explicitly. Production assembly consumes the six bundles in the local `dist/`.
 `npm test` also runs local source guards from `checks/` before Playwright;
 `npm run test:source` runs those guards without the browser or contracts tools.
 
+## Specification references
+
+Source comments cite `spec/wire-v1.md` (the wire contract: envelope, fields, statuses,
+retry rules) and `spec/sdk-conformance.md` (the behavioural contract, whose `C…` and `W…`
+identifiers name conformance scenarios). Neither file ships in this repository: both live in
+the public contracts repository at <https://github.com/usejelto/contracts/tree/main/spec>.
+A comment that states a rule in words and then cites a section is pointing at the normative
+text for that rule.
+
 ## Licence
 
 Code here is MIT ([LICENSE](LICENSE)); the explanatory prose in this repository

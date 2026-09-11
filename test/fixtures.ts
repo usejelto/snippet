@@ -1,4 +1,4 @@
-// The Playwright fixtures every §4 case uses: one mockd for the run, one Site
+// The Playwright fixtures every test case uses: one mockd for the run, one Site
 // per test, and the schema check T22 and T40 apply to whatever was recorded.
 
 import { test as base, expect } from '@playwright/test'
