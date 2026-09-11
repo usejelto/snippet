@@ -57,7 +57,11 @@ jobs:
     # pretending to run: set JELTO_CONTRACTS_ARCHIVE_URL and
     # JELTO_CONTRACTS_ARCHIVE_SHA256 to activate it. CONTRIBUTING.md covers
     # running the suite locally with JELTO_CONTRACTS_DIR.
-    if: vars.JELTO_CONTRACTS_ARCHIVE_URL != ''
+    #
+    # Both variables gate the job. A URL without its checksum must not start it:
+    # `sha256sum -c` treats a line with an empty digest as improperly formatted
+    # and still exits 0, so a half-configured job would install unverified bytes.
+    if: vars.JELTO_CONTRACTS_ARCHIVE_URL != '' && vars.JELTO_CONTRACTS_ARCHIVE_SHA256 != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -77,8 +81,13 @@ jobs:
           ARCHIVE_SHA256: ${{ vars.JELTO_CONTRACTS_ARCHIVE_SHA256 }}
         run: |
           set -euo pipefail
+          # The job condition already requires both; --strict is the second lock
+          # on the same door. Without it an empty digest is merely "improperly
+          # formatted" and sha256sum still exits 0, installing unverified bytes.
           curl -fsSL "$ARCHIVE_URL" -o contracts.zip
-          echo "$ARCHIVE_SHA256  contracts.zip" | sha256sum -c -
+          echo "$ARCHIVE_SHA256  contracts.zip" | sha256sum -c --strict -
+          # The archive is flat -- spec/, go.mod and the conformance tools sit at
+          # its top level -- so this directory is JELTO_CONTRACTS_DIR as it is.
           unzip -q contracts.zip -d "$RUNNER_TEMP/contracts"
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
