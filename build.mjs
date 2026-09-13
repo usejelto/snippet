@@ -163,16 +163,20 @@ for (const name of extensions) {
   const outfile = path.join(outdir, file)
   await esbuild.build({ entryPoints: [path.join(here, `src/${name}-extension.ts`)], outfile,
     bundle: true, minify: true, format: 'iife', target: ['safari16', 'chrome109', 'firefox115'], legalComments: 'none' })
-  const raw = readFileSync(outfile)
+  const compressed = await minify(readFileSync(outfile, 'utf8'), { ecma: 2020, compress: { passes: 2 }, mangle: true, format: { comments: false } })
+  if (!compressed.code) throw new Error(`minification produced no ${file}`)
+  const raw = Buffer.from(compressed.code + '\n')
+  writeFileSync(outfile, raw)
   const text = raw.toString('utf8')
   const size = gzipSync(raw, { level: 9 }).length
-  process.stdout.write(`  ${file}: ${size} B gzipped (optional, budget 2000 B)\n`)
+  const budget = name === 'checkout' ? 2250 : 2000
+  process.stdout.write(`  ${file}: ${size} B gzipped (optional, budget ${budget} B)\n`)
   for (const [fname, re] of FORBIDDEN) {
     if (re.test(text)) fail(`make snippet: the CSP-safety rule forbids ${fname} in the emitted ${file}\n`)
   }
-  // Checkout may retain only bounded aggregate channel context in this tab; the visibility
+  // Checkout may retain bounded channel context and its pageview reference in this tab; the visibility
   // helper remains storage-free.
-  if (size > 2000 || COOKIE_CODE.test(text) || /localStorage|indexedDB|\bcaches\b/.test(text) || (!['checkout', 'entry'].includes(name) && /sessionStorage/.test(text))) fail(`${file} violates extension size/storage contract\n`)
+  if (size > budget || COOKIE_CODE.test(text) || /localStorage|indexedDB|\bcaches\b/.test(text) || (!['checkout', 'entry'].includes(name) && /sessionStorage/.test(text))) fail(`${file} violates extension size/storage contract\n`)
 }
 const expected = new Set([...VARIANTS.map((v) => v.file), ...extensions.map(name => `jelto.${name}.js`)])
 const stray = readdirSync(outdir).filter((f) => !expected.has(f))

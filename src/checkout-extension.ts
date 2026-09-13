@@ -1,8 +1,9 @@
-// Optional payment attribution. Only aggregate channel context is remembered;
+// Optional payment attribution. Channel context and the existing pageview reference
+// may be remembered in this tab for 30 minutes;
 // payment references and emails are sent to the provider-verifying intake.
 export {}
-type Context = { cohort: string; first: boolean }
-type Metadata = { jelto_cohort?: string; jelto_jt?: 'first'; jelto_entry_page?: string }
+type Context = { cohort?: string; first: boolean; pageview_id?: string }
+type Metadata = { jelto_cohort?: string; jelto_jt?: 'first'; jelto_entry_page?: string; jelto_pageview?: string }
 type Payment = { email?: string; provider?: string; environment?: string; session_id?: string; order_id?: string; checkout_id?: string }
 type API = ((command: string, value?: unknown) => unknown) & { q?: ArrayLike<unknown>[] }
 const g = window as unknown as { jelto?: API; jeltoCheckoutMetadata?: () => Metadata; __jeltoEntry?: () => Metadata }
@@ -22,12 +23,12 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   if (memory) {
     try {
       const stored = JSON.parse(sessionStorage.getItem(key) || 'null')
-      if (stored && typeof stored.cohort === 'string' && stored.cohort.length <= 512 && typeof stored.first === 'boolean' && stored.at <= Date.now() && stored.at > Date.now() - ttl) saved = stored
+      if (stored && (typeof stored.cohort === 'string' && stored.cohort.length <= 512 || stored.cohort === undefined && stored.pageview_id) && (!stored.pageview_id || typeof stored.pageview_id === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(stored.pageview_id)) && typeof stored.first === 'boolean' && stored.at <= Date.now() && stored.at > Date.now() - ttl) saved = stored
       else sessionStorage.removeItem(key)
     } catch {}
   }
   function remember(value: Context): Context {
-    if (memory && (!saved || saved.cohort !== value.cohort || saved.first !== value.first || saved.at <= Date.now() - ttl)) {
+    if (memory && (!saved || saved.cohort !== value.cohort || saved.first !== value.first || saved.pageview_id !== value.pageview_id || saved.at <= Date.now() - ttl)) {
       saved = { ...value, at: Date.now() }
       try { sessionStorage.setItem(key, JSON.stringify(saved)) } catch {}
     }
@@ -35,20 +36,23 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   }
   function context(): Context | null {
     if (!enabled()) return null
-    const now = api!('attribution') as Context
+    let now = api!('attribution') as Context
     if (!now || typeof now.cohort !== 'string' || now.cohort.length > 512) return null
     const q = new URLSearchParams(location.search)
     const returning = ['session_id', 'order_id', 'checkout_id'].some(k => q.has(k))
     const provider = now.cohort.startsWith('ref:') && isProvider(now.cohort.slice(4))
-    if (now.cohort && !provider) return remember(now)
-    if (saved && saved.at > Date.now() - ttl) return saved
-    if (!returning && !document.referrer) return remember(now)
-    return null
+    if ((returning || provider) && saved && saved.at > Date.now() - ttl) return saved
+    if (returning || provider) return now.cohort && !provider ? now : null
+    const page = api!('context') as { active: boolean; pageviewId?: string }
+    now = { ...now, pageview_id: page?.active ? page.pageviewId : undefined }
+    if (now.cohort) return remember(now)
+    if (!document.referrer) return remember(now)
+    return now.pageview_id ? remember({ first: now.first, pageview_id: now.pageview_id }) : null
   }
   context()
   function metadata(): Metadata {
     const value = context()
-    return { ...(value?.cohort && { jelto_cohort: value.cohort, ...(value.first && { jelto_jt: 'first' as const }) }), ...g.__jeltoEntry?.() }
+    return { ...(value?.cohort && { jelto_cohort: value.cohort, ...(value.first && { jelto_jt: 'first' as const }) }), ...(value?.pageview_id && { jelto_pageview: value.pageview_id }), ...g.__jeltoEntry?.() }
   }
   g.jeltoCheckoutMetadata = metadata
   let endpoint = ''
@@ -65,7 +69,7 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
       const channel = context()
       const entry_page = g.__jeltoEntry?.().jelto_entry_page
       if (!channel && !entry_page) return
-      const body = JSON.stringify({ provider: input.provider, environment: input.environment || environment, email: input.email, session_id: input.session_id, order_id: input.order_id, checkout_id: input.checkout_id, cohort: channel?.cohort, entry_page, ...(channel?.first && { jt: 'first' }) })
+      const body = JSON.stringify({ provider: input.provider, environment: input.environment || environment, email: input.email, session_id: input.session_id, order_id: input.order_id, checkout_id: input.checkout_id, cohort: channel?.cohort, pageview_id: channel?.pageview_id, entry_page, ...(channel?.first && { jt: 'first' }) })
       if (body.length > 4096 || sent.has(body) || sent.size >= 20) return
       sent.add(body)
       let tries = 0
@@ -111,16 +115,18 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
       if (previous && link.href === previous.after) link.href = previous.before
       const before = link.href
       const value = metadata()
-      if (!value.jelto_cohort && !value.jelto_entry_page) return
+      if (!value.jelto_cohort && !value.jelto_entry_page && !value.jelto_pageview) return
       const url = new URL(link.href)
       if (url.protocol !== 'https:') return
       const provider = link.dataset.jeltoCheckout
       const params = url.searchParams
       const host = url.hostname
       if (provider === 'stripe' && /^(buy|checkout)\.stripe\.com$/.test(host)) {
-        if (value.jelto_cohort && !params.has('client_reference_id')) {
-          const bytes = new TextEncoder().encode(value.jelto_cohort)
-          const reference = (value.jelto_jt === 'first' ? 'jf1_' : 'jl1_') + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+        if ((value.jelto_cohort || value.jelto_pageview) && !params.has('client_reference_id')) {
+          const bytes = new TextEncoder().encode(value.jelto_cohort || '')
+          const prefix = (value.jelto_jt === 'first' ? 'jf' : 'jl') + (value.jelto_pageview ? '2_' + value.jelto_pageview + '_' : '1_')
+          let reference = prefix + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+          if (reference.length > 200 && value.jelto_pageview) reference = prefix
           if (reference.length <= 200) params.set('client_reference_id', reference)
         }
       } else if (/^lemon_?squeezy$/.test(provider!) && host.endsWith('.lemonsqueezy.com')) {

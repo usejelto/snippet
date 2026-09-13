@@ -22,14 +22,15 @@ test('entry groups choose configured order and retain only an id and timestamp a
   })
   site.defaults({ head: entry + checkout })
   await site.goto('/pricing/private-customer?utm_source=launch')
-  expect(await page.evaluate(metadata)).toEqual({ jelto_cohort: 'launch', jelto_entry_page: 'pricing' })
+  const original = await page.evaluate(metadata)
+  expect(original).toEqual({ jelto_cohort: 'launch', jelto_entry_page: 'pricing', jelto_pageview: expect.any(String) })
   const stored = await page.evaluate(product => JSON.parse(sessionStorage.getItem('jelto_entry_' + product)!), PRODUCT)
   expect(Object.keys(stored).sort()).toEqual(['at', 'id'])
   expect(stored.id).toBe('pricing')
   expect(JSON.stringify(stored)).not.toContain('private-customer')
   await site.goto('/thanks?session_id=cs_test_fixture')
   await expect.poll(() => requests.length).toBe(1)
-  expect(requests[0]).toEqual({ environment: 'test', session_id: 'cs_test_fixture', cohort: 'launch', entry_page: 'pricing' })
+  expect(requests[0]).toEqual({ environment: 'test', session_id: 'cs_test_fixture', cohort: 'launch', entry_page: 'pricing', pageview_id: original.jelto_pageview })
 })
 
 test('entry memory off is storage-free and observes only the current document', async ({ page, site }) => {
@@ -38,9 +39,9 @@ test('entry memory off is storage-free and observes only the current document', 
   await site.install()
   site.defaults({ head: entry + checkout.replace('data-environment', 'data-payment-memory="off" data-environment') })
   await site.goto('/pricing/start')
-  expect(await page.evaluate(metadata)).toEqual({ jelto_entry_page: 'pricing' })
+  expect(await page.evaluate(metadata)).toEqual({ jelto_entry_page: 'pricing', jelto_pageview: expect.any(String) })
   await site.goto('/other')
-  expect(await page.evaluate(metadata)).toEqual({ jelto_entry_page: 'broad' })
+  expect(await page.evaluate(metadata)).toEqual({ jelto_entry_page: 'broad', jelto_pageview: expect.any(String) })
   expect(await storageCalls(page)).toEqual([])
 })
 
@@ -64,7 +65,7 @@ test('entry capture follows eligible SPA pageviews and ignores excluded paths', 
   const narrow = JSON.stringify([{ id: 'pricing', host: 'site.example', paths: ['/pricing/**'] }])
   site.defaults({ attrs: { exclude: '/private/**' }, head: entry + checkout.replace(groups, narrow).replace('data-environment', 'data-payment-memory="off" data-environment') })
   await site.goto('/start')
-  expect(await page.evaluate(metadata)).toEqual({})
+  expect(await page.evaluate(metadata)).toEqual({ jelto_pageview: expect.any(String) })
   await page.evaluate(() => history.pushState({}, '', '/pricing/plans'))
   await page.waitForTimeout(350)
   await page.evaluate(() => history.pushState({}, '', '/other'))
@@ -76,7 +77,7 @@ test('entry capture follows eligible SPA pageviews and ignores excluded paths', 
   expect(await storageCalls(page)).toEqual([])
 })
 
-test('entry-only metadata reaches Lemon Squeezy and Polar without inventing Stripe references', async ({ page, site }) => {
+test('entry metadata and existing pageviews reach the providers without inventing a channel', async ({ page, site }) => {
   await lifecycle(page)
   await site.install()
   site.defaults({ head: entry + checkout, body: `
@@ -93,8 +94,8 @@ test('entry-only metadata reaches Lemon Squeezy and Polar without inventing Stri
     })
   })
   expect(new URL(hrefs[0]!).searchParams.get('checkout[custom][jelto_entry_page]')).toBe('pricing')
-  expect(JSON.parse(new URL(hrefs[1]!).searchParams.get('metadata')!)).toEqual({ jelto_entry_page: 'pricing' })
-  expect(new URL(hrefs[2]!).searchParams.has('client_reference_id')).toBe(false)
+  expect(JSON.parse(new URL(hrefs[1]!).searchParams.get('metadata')!)).toEqual({ jelto_entry_page: 'pricing', jelto_pageview: expect.any(String) })
+  expect(new URL(hrefs[2]!).searchParams.get('client_reference_id')).toMatch(/^jl2_[a-f0-9-]{36}_$/)
 })
 
 test('unmatched hosts and excluded initialization cannot create entry memory', async ({ page, site }) => {
@@ -103,7 +104,7 @@ test('unmatched hosts and excluded initialization cannot create entry memory', a
   await site.install()
   site.defaults({ head: entry + checkout })
   await site.goto('https://unregistered.example/pricing/start')
-  expect(await page.evaluate(metadata)).toEqual({})
+  expect(await page.evaluate(metadata)).toEqual({ jelto_pageview: expect.any(String) })
   expect(await page.evaluate(product => sessionStorage.getItem('jelto_entry_' + product), PRODUCT)).toBeNull()
   await site.goto('/pricing/start?jelto_ignore=1')
   expect(await storageCalls(page)).toEqual([])
