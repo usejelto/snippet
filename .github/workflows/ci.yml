@@ -97,3 +97,54 @@ jobs:
         env:
           JELTO_CONTRACTS_DIR: ${{ runner.temp }}/contracts
         run: npm test
+
+  publish:
+    name: Publish package
+    # Backend CI contract §8: the producer publishes its own package after this
+    # push's checks pass on main. The pair is built from the artifact the checks
+    # uploaded, so what was tested is what ships.
+    needs: [checks, browser]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      # Build provenance for the pushed digest (public repository).
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: snippet-bundles
+          path: dist
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: oras-project/setup-oras@v2
+        with:
+          version: '1.3.3'
+      - name: Sign in to the organization registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish the component package
+        id: package
+        # component-package.json names what the archive holds; the version comes
+        # from package.json. An existing version is reused only when it is
+        # byte-identical; a collision fails, so changed content needs a new version.
+        env:
+          PRODUCER_COMMIT: ${{ github.sha }}
+        run: python3 vendor/package-tools/package_component.py --commit "$PRODUCER_COMMIT" --out "$RUNNER_TEMP/package" publish
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ${{ steps.package.outputs.name }}
+          subject-digest: ${{ steps.package.outputs.digest }}
+          push-to-registry: true

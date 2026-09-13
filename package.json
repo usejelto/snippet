@@ -2,7 +2,7 @@
   "name": "@jelto/snippet",
   "private": true,
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Jelto web snippet — spec/snippet.md. Cookieless and cookie builds with enforced bundle budgets.",
   "repository": {
     "type": "git",

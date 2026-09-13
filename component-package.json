@@ -1,0 +1,6 @@
+{
+  "component": "snippet",
+  "include": [
+    "dist"
+  ]
+}
