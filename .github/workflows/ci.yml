@@ -148,3 +148,6 @@ jobs:
           subject-name: ${{ steps.package.outputs.name }}
           subject-digest: ${{ steps.package.outputs.digest }}
           push-to-registry: true
+          # The attestation is what the backend verifies; the org has no
+          # artifact-metadata storage, so the optional record is not attempted.
+          create-storage-record: false
