@@ -26,15 +26,16 @@ const VARIANTS = [
   {
     file: 'jelto.js',
     cookie: false,
-    budget: 3300,
+    // spec/snippet.md §1 v0.14: 3 300 for the code plus 20 B reserved for the version string.
+    budget: 3320,
     rule: 'core bundle budget',
     what: 'the default build, cookieless',
   },
   {
     file: 'jelto.cookie.js',
     cookie: true,
-    // Shared-source ceiling plus the measured 218-byte cookie-mode cost.
-    budget: 3518,
+    // Shared-source ceiling plus the measured 218-byte cookie-mode cost (§7.3).
+    budget: 3538,
     rule: 'cookie-mode bundle budget',
     what: 'the opt-in cookie mode',
   },

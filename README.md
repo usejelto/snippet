@@ -2,7 +2,7 @@
 
 The core remains dependency-free and defaults to no browser storage. Build with
 `npm run build`; run `npm run check` and `npm test` for the Playwright contracts.
-Core/cookie limits remain 3300/3518 gzip bytes; each optional helper is ≤2000.
+Core/cookie limits are 3320/3538 gzip bytes (spec/snippet.md v0.14 reserves 20 B for the version string); each optional helper is ≤2000.
 
 Load deferred scripts in this order (omit helpers you do not enable):
 

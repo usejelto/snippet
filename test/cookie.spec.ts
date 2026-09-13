@@ -267,7 +267,7 @@ test('TC10 — jelto.cookie.js is within its gzipped budget', () => {
   // cookie-only rule reopens the cookie-mode budget, and a change to the shared source
   // is refused by the shared-source budget's gate first. The number is here and in
   // build.mjs, and nowhere else.
-  const BUDGET = 3518
+  const BUDGET = 3538 // spec/snippet.md §7.3, 3 320 + 218
   const bundle = readFileSync(path.resolve(here, '../dist/jelto.cookie.js'))
   const gzipped = gzipSync(bundle, { level: 9 }).length
   console.log(`TC10: ${bundle.length} B raw, ${gzipped} B gzipped of ${BUDGET}`)
