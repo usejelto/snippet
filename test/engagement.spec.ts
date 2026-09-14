@@ -212,7 +212,12 @@ test('T39 — a blurred window is not engaged time', async ({ page, site, mockd 
   await hide(page)
   await page.clock.runFor(1_000)
 
-  const rows = engagements(await mockd.awaitEvents(2))
+  // Three events: the pageview, the engagement the blur flushes (4 s of engaged
+  // time, above the 3 s floor T39c sets) and the engagement the hide flushes.
+  // Waiting for two could return before the hide's row arrived and read the
+  // blur's 4 s as the final figure.
+  const rows = engagements(await mockd.awaitEvents(3))
+  expect(rows).toHaveLength(2)
   const last = rows[rows.length - 1]!
   expect(last.e!).toBeLessThan(10_000)
   expect(last.e!).toBeGreaterThanOrEqual(5_500)

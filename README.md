@@ -59,7 +59,7 @@ link alone does not invent an entry group. Missing entry context remains unknown
 This directory is the browser snippet extraction unit, separate from the
 `@jelto/analytics` integration package. `npm ci`, `npm run build` and
 `npm run check` run locally. For `npm test`, install the locked Playwright
-browser and set `JELTO_CONTRACTS_DIR` to an extracted Jelto contracts **0.1.0**
+browser and set `JELTO_CONTRACTS_DIR` to an extracted Jelto contracts **0.1.x**
 archive. It supplies the mock server and wire validator; no backend source is
 needed. The monorepo root `make test-snippet` supplies its local contracts
 explicitly. Production assembly consumes the six bundles in the local `dist/`.
