@@ -2,7 +2,7 @@
   "name": "snippet-package-tools",
   "version": "0.1.0",
   "producer": "contracts",
-  "producer_commit": "269dee232947c8bfffef1af2bc90f248d1c1b042",
+  "producer_commit": "a6182b285e4a0cf24827a3047e421f60af335f60",
   "files": {
     "package_component.py": {
       "source": "package_component.py",
