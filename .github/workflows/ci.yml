@@ -25,6 +25,10 @@ jobs:
   checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      # Asking the registry whether this version is still publishable.
+      packages: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -46,6 +50,25 @@ jobs:
         run: npm run build
       - name: Source boundaries
         run: npm run test:source
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: oras-project/setup-oras@v2
+        with:
+          version: '1.3.3'
+      - name: Sign in to the organization registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: The package version is still publishable
+        # A published version is immutable. Changed content under a version the
+        # registry already holds would fail the publish job after every check
+        # had passed; this asks first and names the fix.
+        env:
+          PRODUCER_COMMIT: ${{ github.sha }}
+        run: python3 vendor/package-tools/package_component.py --commit "$PRODUCER_COMMIT" --out "$RUNNER_TEMP/package-check" check
       - uses: actions/upload-artifact@v7
         with:
           name: snippet-bundles
