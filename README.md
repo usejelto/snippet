@@ -61,8 +61,9 @@ This directory is the browser snippet extraction unit, separate from the
 `npm run check` run locally. For `npm test`, install the locked Playwright
 browser and set `JELTO_CONTRACTS_DIR` to an extracted Jelto contracts **0.1.x**
 archive. It supplies the mock server and wire validator; no backend source is
-needed. The monorepo root `make test-snippet` supplies its local contracts
-explicitly. Production assembly consumes the six bundles in the local `dist/`.
+needed. Run `JELTO_CONTRACTS_DIR=/absolute/path/to/contracts npm test` from
+this repository after installing the browser with `npx playwright install chromium`.
+Production assembly consumes the six bundles in the local `dist/`.
 `npm test` also runs local source guards from `checks/` before Playwright;
 `npm run test:source` runs those guards without the browser or contracts tools.
 
