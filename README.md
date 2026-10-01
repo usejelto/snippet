@@ -67,6 +67,12 @@ Production assembly consumes the six bundles in the local `dist/`.
 `npm test` also runs local source guards from `checks/` before Playwright;
 `npm run test:source` runs those guards without the browser or contracts tools.
 
+GitHub Actions runs `snippet checks` for pull requests, manual dispatch and
+reusable calls; branch pushes do not start it. To publish the snippet package,
+run `snippet checks` manually on `main` with `publish` enabled; it defaults to
+false. A published version is immutable, so changed content needs a new version
+in `package.json` first.
+
 ## Specification references
 
 Source comments cite `spec/wire-v1.md` (the wire contract: envelope, fields, statuses,

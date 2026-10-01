@@ -1,10 +1,14 @@
 # Portable workflow: this component directory must be the repository root.
 name: snippet checks
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the snippet package after checks pass (main only)
+        type: boolean
+        required: false
+        default: false
   workflow_call:
 
 permissions:
@@ -23,7 +27,7 @@ env:
 
 jobs:
   checks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
@@ -52,10 +56,10 @@ jobs:
         run: npm run test:source
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - uses: oras-project/setup-oras@v2
         with:
-          version: '1.3.3'
+          version: '1.3.4'
       - name: Sign in to the organization registry
         uses: docker/login-action@v4
         with:
@@ -88,7 +92,7 @@ jobs:
     # `sha256sum -c` treats a line with an empty digest as improperly formatted
     # and still exits 0, so a half-configured job would install unverified bytes.
     if: vars.JELTO_CONTRACTS_ARCHIVE_URL != '' && vars.JELTO_CONTRACTS_ARCHIVE_SHA256 != ''
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -99,9 +103,6 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - uses: actions/setup-go@v7
-        with:
-          go-version: '1.26.8'
       - name: Install the pinned contracts archive
         env:
           ARCHIVE_URL: ${{ vars.JELTO_CONTRACTS_ARCHIVE_URL }}
@@ -116,6 +117,13 @@ jobs:
           # The archive is flat -- spec/, go.mod and the conformance tools sit at
           # its top level -- so this directory is JELTO_CONTRACTS_DIR as it is.
           unzip -q contracts.zip -d "$RUNNER_TEMP/contracts"
+      - uses: actions/setup-go@v7
+        with:
+          # The mock server builds with the Go version the verified contracts
+          # archive declares, not a copy of it kept here.
+          go-version-file: ${{ runner.temp }}/contracts/go.mod
+          # This repository has no go.sum to key a module cache on.
+          cache: false
       - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - name: Browser and timing contracts
@@ -125,12 +133,13 @@ jobs:
 
   publish:
     name: Publish package
-    # Backend CI contract §8: the producer publishes its own package after this
-    # push's checks pass on main. The pair is built from the artifact the checks
-    # uploaded, so what was tested is what ships.
+    # Publication is a deliberate, manual step: dispatch this workflow on main
+    # with publish checked. Pull-request and reusable runs never publish. The
+    # pair is built from the artifact the checks uploaded, so what was tested
+    # is what ships.
     needs: [checks, browser]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -149,10 +158,10 @@ jobs:
           path: dist
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - uses: oras-project/setup-oras@v2
         with:
-          version: '1.3.3'
+          version: '1.3.4'
       - name: Sign in to the organization registry
         uses: docker/login-action@v4
         with:
