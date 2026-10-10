@@ -15,18 +15,19 @@ function click(ev: MouseEvent): void {
   // `auxclick` also fires for the secondary button, which is not a click.
   if (ev.defaultPrevented || ev.button > 1) return
   const t = ev.target as Element | null
-  if (!t || !t.closest) return
+  if (!t?.closest) return
 
   const a = t.closest('a[href]') as HTMLAnchorElement | null
   const tag = t.closest('[data-jelto-event]:not(form)') as HTMLElement | null
   // Preserve modifier, middle-button and new-tab navigation.
-  const other = ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1 || !!a?.target
+  const other = ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1 || a?.target
 
   let dl = false
-  // Download handling (and its `?jl=` rewrite) applies only to a resolved
-  // http(s) URL: a data:/blob: href has no real pathname or navigation to
-  // decorate, and its "path" is the payload itself.
-  if (a && /^https?:$/.test(a.protocol)) {
+  // Download handling (and its `?jl=` rewrite) and the tagged-link wait apply only
+  // to a resolved http(s) URL: a data:/blob: href has no real pathname or navigation
+  // to decorate, and its "path" is the payload itself.
+  const http = a && /^https?:$/.test(a.protocol)
+  if (http) {
     const p = a.pathname
     const lower = p.toLowerCase()
     dl = a.hasAttribute('download') || c.fileTypes.some((x) => lower.endsWith('.' + x))
@@ -54,13 +55,24 @@ function click(ev: MouseEvent): void {
         if (at.name.indexOf('data-jelto-event-') === 0) props[at.name.slice(17)] = at.value
       }
       fire({ n, props })
-      // Tagged same-tab links wait up to 300 ms for sending; downloads are never delayed.
-      if (a && !other && !dl) {
-        ev.preventDefault()
+      // A same-tab tagged http(s) link waits up to 300 ms for sending; downloads are
+      // never delayed. The wait is decided on `window` in the bubble phase, after the
+      // page's own handlers: a handler that cancels the click keeps it cancelled, and
+      // a javascript:, mailto: or other non-HTTP href is never re-navigated here.
+      if (http && !other && !dl) {
         const href = a.href
-        setTimeout(() => {
-          location.href = href
-        }, 300)
+        addEventListener(
+          'click',
+          (e) => {
+            if (e === ev && !e.defaultPrevented) {
+              e.preventDefault()
+              setTimeout(() => {
+                location.href = href
+              }, 300)
+            }
+          },
+          { once: true },
+        )
       }
     }
   }

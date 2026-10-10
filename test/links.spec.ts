@@ -1,5 +1,5 @@
 // The click cases: download, outbound and tagged clicks.
-// T5, T5b, T6, T7, T8, T9, T10, T11, T11b, T11c, T12, T21, T23, T24, T26.
+// T5, T5b, T6, T7, T8, T9, T10, T11, T11b, T11c, T12, T21, T23, T24, T26, T50, T51.
 
 import { test, expect } from './fixtures'
 import { SITE_ORIGIN } from './harness/site'
@@ -334,4 +334,52 @@ test('T26 — data-file-types="pkg": .zip is not a download and .pkg is', async 
   await Promise.all([page.waitForURL(/\/dl\/App\.pkg/), page.click('#pkg')])
   const events = await mockd.awaitEvents(2)
   expect(events.filter((e) => e.n === 'click:download').map((e) => e.props?.file)).toEqual(['App.pkg'])
+})
+
+test('T50 — a page handler that cancels a tagged same-tab link after the snippet keeps it cancelled; the event still sends', async ({
+  page,
+  site,
+  mockd,
+}) => {
+  await lifecycle(page)
+  await site.install()
+  // A bubble-phase `document` listener runs after the snippet's capture listener
+  // and before its `window` bubble listener: the SPA-router or confirm-before-leave case.
+  site.defaults({
+    head: '<script>document.addEventListener("click", function (e) { e.preventDefault() })</script>',
+    body: '<a id="cta" href="/thanks" data-jelto-event="cta">go</a>',
+  })
+  await site.goto('/')
+  await mockd.awaitEvents(1)
+
+  await page.click('#cta')
+  // The click flush is throttled by send.ts; the event may trail the click by up to 2 s.
+  const events = await mockd.awaitEvents(2)
+  expect(events.some((e) => e.n === 'cta')).toBe(true)
+  // Well past the 300 ms wait: the page is still here.
+  await page.waitForTimeout(500)
+  expect(page.url()).toBe(SITE_ORIGIN + '/')
+})
+
+test('T51 — a tagged javascript: link sends its event, is not cancelled by the snippet and is never re-navigated', async ({
+  page,
+  site,
+  mockd,
+}) => {
+  await lifecycle(page)
+  await site.install()
+  // The page observes, after the snippet's capture listener, whether the click was cancelled.
+  site.defaults({
+    head: '<script>document.addEventListener("click", function (e) { window.cancelled = e.defaultPrevented })</script>',
+    body: '<a id="cta" href="javascript:void(0)" data-jelto-event="cta">go</a>',
+  })
+  await site.goto('/')
+  await mockd.awaitEvents(1)
+
+  await page.click('#cta')
+  const events = await mockd.awaitEvents(2)
+  expect(events.some((e) => e.n === 'cta')).toBe(true)
+  expect(await page.evaluate(() => (window as unknown as { cancelled: boolean }).cancelled)).toBe(false)
+  await page.waitForTimeout(500)
+  expect(page.url()).toBe(SITE_ORIGIN + '/')
 })
