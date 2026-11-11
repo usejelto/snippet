@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.4",
-  "description": "Jelto web snippet — spec/snippet.md. Cookieless and cookie builds with enforced bundle budgets.",
+  "description": "Jelto web snippet \u2014 spec/snippet.md. Cookieless and cookie builds with enforced bundle budgets.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/usejelto/snippet.git"
@@ -19,10 +19,19 @@
     "test:source": "node --test checks/source-boundaries.test.mjs checks/bundle-guards.test.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.56.0",
     "@types/node": "^24.9.2",
     "esbuild": "^0.25.0",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "knip": "^6.45.1",
+    "prettier": "^3.10.0",
     "terser": "5.51.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.2"
+  },
+  "overrides": {
+    "minimatch": "11.0.1"
   }
 }
