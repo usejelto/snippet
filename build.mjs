@@ -26,7 +26,7 @@ const VARIANTS = [
   {
     file: 'jelto.js',
     cookie: false,
-    // spec/snippet.md §1 v0.14: 3 300 for the code plus 20 B reserved for the version string.
+    // 3 300 for the code plus 20 B reserved for the version string.
     budget: 3320,
     rule: 'core bundle budget',
     what: 'the default build, cookieless',

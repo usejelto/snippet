@@ -254,7 +254,7 @@ test('T19 — a pending batch is delivered on visibilitychange -> hidden', async
 
 test('T20 — the bundle is within its gzipped budget', () => {
   // The approved shared-source ceiling.
-  const BUDGET = 3320 // spec/snippet.md §1 v0.14
+  const BUDGET = 3320 // 3 300 for the code plus 20 B for the version string
   const bundle = readFileSync(path.resolve(here, '../dist/jelto.js'))
   const gzipped = gzipSync(bundle, { level: 9 }).length
   console.log(`T20: ${bundle.length} B raw, ${gzipped} B gzipped of ${BUDGET}`)

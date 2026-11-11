@@ -76,7 +76,7 @@ jobs:
           retention-days: 14
 
   browser:
-    # spec/snippet.md §4 runs in a real browser against the contracts mock
+    # The browser suite runs in a real browser against the contracts mock
     # server, so it needs a published contracts archive. That download is not
     # configured yet, so this job waits on the repository variables rather than
     # pretending to run: set JELTO_CONTRACTS_ARCHIVE_URL and
