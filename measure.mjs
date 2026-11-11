@@ -3,8 +3,8 @@
 // stubs retain call sites.
 
 import { gzipSync } from 'node:zlib'
-import { readFileSync, writeFileSync, mkdtempSync, cpSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
+import { readFileSync, writeFileSync, mkdtempSync, cpSync, rmSync, symlinkSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -51,18 +51,27 @@ export function pageview(_o?: { u?: string; r?: string }): void {}`,
   {
     file: 'send.ts',
     rules: 'the batch, the transport, the kill switch, the event id',
+    // initSend keeps the cookie-mode wiring: without vid.ts in its graph the cookie
+    // bundle fails build.mjs's cookie guard, and the cookieless bundle measured here
+    // folds the branch away either way. send() reports success and stopped() reports
+    // no kill switch, so the pageview path behind them stays in the bundle.
     stub: `import type { Config, Outgoing } from './types'
+import { initVid } from './vid'
+export function stopped(): boolean { return false }
 export function uuid(): string { return '' }
-export function initSend(_c: Config): void {}
-export function send(_ev: Outgoing): void {}
-export function flush(_force?: boolean): void {}`,
+export function initSend(_c: Config): void { if (__JELTO_COOKIE__) initVid() }
+export function send(_ev: Outgoing): boolean { return true }
+export function flush(_force?: boolean, _count?: number): void {}`,
   },
   {
     file: 'config.ts',
     rules: 'the data-* attributes and the page-wide skip rules',
+    // A config that is present and not blocked: a null or blocked one lets the minifier
+    // drop every init call behind it, so the row would weigh the whole bundle and the
+    // cookie bundle would lose vid.ts and fail build.mjs's cookie guard.
     stub: `import type { Config } from './types'
-export function readConfig(): Config | null { return null }
-export function blocked(_c: Config): boolean { return true }
+export function readConfig(): Config | null { return {} as Config }
+export function blocked(_c: Config): boolean { return false }
 export function excluded(_c: Config, _p: string): boolean { return false }
 export function pageUrl(_c: Config): string { return location.href }
 export function pagePath(_c: Config): string { return location.pathname }
@@ -70,17 +79,27 @@ export function urlPath(_c: Config, a: string): string { return a }`,
   },
 ]
 
+// Stubbed copies are measured, not judged: the override lifts the size budget while
+// every other build.mjs guard still runs, so a build that fails here is broken.
 function build(dir) {
   execFileSync('node', [path.join(dir, 'build.mjs'), '--budget', '100000000'], { cwd: dir, stdio: 'ignore' })
   const raw = readFileSync(path.join(dir, 'dist/jelto.js'))
   return { raw: raw.length, gzip: gzipSync(raw, { level: 9 }).length }
 }
 
+// The budgets are the ones build.mjs enforces, not a copy kept here: the unmodified tree
+// builds once with nothing overridden and build.mjs prints every bundle against its
+// budget. An over-budget tree is still measured, which is when this report matters, and
+// the exit status still says it is over.
+const enforced = spawnSync('node', [path.join(here, 'build.mjs')], { cwd: here, encoding: 'utf8' })
+if (enforced.error) throw enforced.error
+process.stdout.write(`\ncore bundle budget — where the bytes went\n\n${enforced.stdout}`)
+process.stderr.write(enforced.stderr)
+if (enforced.status !== 0) process.exitCode = 1
+
 const whole = build(here)
 process.stdout.write(
-  `\ncore bundle budget — where the bytes went\n\n` +
-    `  the whole snippet${' '.repeat(21)}${String(whole.raw).padStart(6)} B raw   ${String(whole.gzip).padStart(5)} B gzipped\n` +
-    `  the core bundle budget${' '.repeat(17)}${' '.repeat(6)}         ${String(3000).padStart(5)} B gzipped\n\n` +
+  `\n  the whole snippet${' '.repeat(21)}${String(whole.raw).padStart(6)} B raw   ${String(whole.gzip).padStart(5)} B gzipped   (jelto.js)\n\n` +
     `  MARGINAL COST of each rule group — what removing it alone would save.\n` +
     `  These do not sum to the total: gzip shares one dictionary across the file,\n` +
     `  and every stubbed build still carries the call sites of what it removed.\n\n`,
@@ -88,15 +107,21 @@ process.stdout.write(
 
 for (const group of GROUPS) {
   const dir = mkdtempSync(path.join(tmpdir(), 'jelto-measure-'))
-  for (const item of ['src', 'build.mjs', 'package.json', 'node_modules']) {
-    cpSync(path.join(here, item), path.join(dir, item), { recursive: true, dereference: false, verbatimSymlinks: true })
+  try {
+    for (const item of ['src', 'build.mjs', 'package.json']) {
+      cpSync(path.join(here, item), path.join(dir, item), { recursive: true })
+    }
+    // Linked, not copied: build.mjs only resolves esbuild and terser from it.
+    symlinkSync(path.join(here, 'node_modules'), path.join(dir, 'node_modules'), 'dir')
+    writeFileSync(path.join(dir, 'src', group.file), group.stub)
+    const without = build(dir)
+    const cost = whole.gzip - without.gzip
+    process.stdout.write(
+      `  ${group.file.padEnd(12)} ${String(cost).padStart(5)} B gzipped   ${group.rules}\n`,
+    )
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
-  writeFileSync(path.join(dir, 'src', group.file), group.stub)
-  const without = build(dir)
-  const cost = whole.gzip - without.gzip
-  process.stdout.write(
-    `  ${group.file.padEnd(12)} ${String(cost).padStart(5)} B gzipped   ${group.rules}\n`,
-  )
 }
 
 process.stdout.write(
