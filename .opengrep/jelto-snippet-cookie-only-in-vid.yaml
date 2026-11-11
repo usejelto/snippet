@@ -1,0 +1,35 @@
+rules:
+  # Cookie mode lives in src/vid.ts alone. The cookieless default build drops
+  # that module, so a cookie read or write anywhere else in the source would
+  # ship in jelto.js, the bundle a site loads because it sets no cookie.
+  # checks/source-boundaries.test.mjs tests the same rule by text; this is its
+  # structural guard, which also sees the property through an alias, an index
+  # or a destructuring, and the Cookie Store API.
+  - id: jelto-snippet-cookie-only-in-vid
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Cookie access outside src/vid.ts. Only the cookie build may touch a
+      cookie: move the access into vid.ts, which the cookieless build drops.
+    paths:
+      include:
+        - "/src/"
+        - "/.opengrep/jelto-snippet-cookie-only-in-vid.*"
+      exclude:
+        - "/src/vid.ts"
+    pattern-either:
+      - pattern: document.cookie
+      - pattern: document?.cookie
+      - pattern: $GLOBAL.document.cookie
+      - pattern: document["cookie"]
+      - pattern: $GLOBAL.document["cookie"]
+      - pattern: "const { cookie } = document"
+      - pattern: "const { cookie: $NAME } = document"
+      - patterns:
+          - pattern-inside: |
+              $DOC = document
+              ...
+          - pattern: $DOC.cookie
+      - pattern: Object.getOwnPropertyDescriptor(Document.prototype, "cookie")
+      - pattern: cookieStore
+      - pattern: $GLOBAL.cookieStore

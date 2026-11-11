@@ -61,6 +61,7 @@ dependencies, pinned by `package-lock.json`.
 | `make workflow-audit` | actionlint, zizmor | workflow syntax, script injection, permissions and pinning |
 | `make osv` | OSV-Scanner | `package-lock.json` against the OSV database, downloaded and matched locally |
 | `make npm-audit` | npm audit | `package-lock.json` against the npm advisory database |
+| `make sast` | opengrep | the community TypeScript, JavaScript, browser and Unicode rules, and the repository's own rules in `.opengrep/` (cookie access only in `src/vid.ts`), each tested against its test file |
 
 When a check reports something, fix a real problem in the same change. A
 deliberate exception, or a finding the tool got wrong, is marked at the one
@@ -76,6 +77,8 @@ place it applies, with the reason beside it:
 - Knip: an entry, `ignoreBinaries` or `ignoreDependencies` line in
   `knip.config.ts` with the reason above it, or `/** @public */` on an export
   something outside the import graph uses.
+- opengrep: `// nosemgrep: <rule-id> -- <reason>` at the end of the finding's
+  first line, or on the line above it when that line is inside a string.
 
 Never disable a rule, a file or a directory wholesale, and never relax a
 threshold to make a check pass.

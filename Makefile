@@ -4,9 +4,15 @@
 # The shared quality targets (hooks, tools, secrets, osv, workflow-audit, sast)
 # arrive from the contracts repository as a checksummed snapshot; `make inputs`
 # in the backend refreshes it, and nothing edits it here.
+# sast: the community rules for TypeScript, JavaScript and browser JavaScript,
+# and the Unicode (bidirectional text) rule for the code, JSON and YAML. The
+# repository's own rules and their test cases are in .opengrep/.
+QUALITY_COMMUNITY_RULES := typescript/lang/security typescript/lang/correctness \
+	javascript/lang/security javascript/lang/correctness javascript/browser/security \
+	generic/unicode/security
 include vendor/quality/quality.mk
 
-security: secrets workflow-audit osv npm-audit
+security: secrets workflow-audit osv npm-audit sast
 
 # The whole gate: what to run before a pull request, and what CI's checks job
 # runs. The browser suite (make test) needs a contracts directory and

@@ -67,7 +67,7 @@ function click(ev: MouseEvent): void {
             if (e === ev && !e.defaultPrevented) {
               e.preventDefault()
               setTimeout(() => {
-                location.href = href
+                location.href = href // nosemgrep: js-open-redirect-from-function -- the http(s) link the visitor clicked, followed after the send wait
               }, 300)
             }
           },

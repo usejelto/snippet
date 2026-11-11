@@ -85,7 +85,7 @@ for (const variant of VARIANTS) {
     ...variant,
     raw,
     gzipped: gzipSync(raw, { level: 9 }).length,
-    inputs: result.metafile.outputs[path.relative(process.cwd(), outfile)]?.inputs ?? {},
+    inputs: result.metafile.outputs[path.relative(process.cwd(), outfile)]?.inputs ?? {}, // nosemgrep: no-stringify-keys -- the key is a path; JSON.stringify only builds esbuild's define values
   })
 }
 

@@ -19,6 +19,7 @@ const GROUPS = [
   {
     file: 'engage.ts',
     rules: 'engagement: the monotonic timer, the pixel maximum, the six triggers',
+    // nosemgrep: missing-template-string-indicator -- TypeScript source: its braces are blocks, not interpolations
     stub: `import type { Config } from './types'
 export function initEngage(_c: Config): void {}
 export function pvStart(_id: string, _u: string): void {}
@@ -27,6 +28,7 @@ export function pvEnd(): void {}`,
   {
     file: 'cohort.ts',
     rules: 'the cohort computation, attribution memory, the checkout accessor',
+    // nosemgrep: missing-template-string-indicator -- TypeScript source: its braces are blocks, not interpolations
     stub: `import type { Config } from './types'
 export function initCohort(_c: Config): void {}
 export function cohort(): string { return '' }
@@ -38,12 +40,14 @@ export function remember(): void {}`,
   {
     file: 'links.ts',
     rules: 'download, outbound and tagged clicks, by delegation',
+    // nosemgrep: missing-template-string-indicator -- TypeScript source: its braces are blocks, not interpolations
     stub: `import type { Config } from './types'
 export function initLinks(_c: Config): void {}`,
   },
   {
     file: 'page.ts',
     rules: 'the pageview, the jelto() API, SPA and hash routing',
+    // nosemgrep: missing-template-string-indicator -- TypeScript source: its braces are blocks, not interpolations
     stub: `import type { Config } from './types'
 export function initPage(_c: Config): void {}`,
   },
@@ -54,6 +58,7 @@ export function initPage(_c: Config): void {}`,
     // bundle fails build.mjs's cookie guard, and the cookieless bundle measured here
     // folds the branch away either way. send() reports success and stopped() reports
     // no kill switch, so the pageview path behind them stays in the bundle.
+    // nosemgrep: missing-template-string-indicator -- TypeScript source: its braces are blocks, not interpolations
     stub: `import type { Config, Outgoing } from './types'
 import { initVid } from './vid'
 export function stopped(): boolean { return false }
@@ -68,6 +73,7 @@ export function flush(_force?: boolean, _count?: number): void {}`,
     // A config that is present and not blocked: a null or blocked one lets the minifier
     // drop every init call behind it, so the row would weigh the whole bundle and the
     // cookie bundle would lose vid.ts and fail build.mjs's cookie guard.
+    // nosemgrep: missing-template-string-indicator -- TypeScript source: its braces are blocks, not interpolations
     stub: `import type { Config } from './types'
 export function readConfig(): Config | null { return {} as Config }
 export function blocked(_c: Config): boolean { return false }

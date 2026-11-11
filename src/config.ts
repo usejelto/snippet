@@ -69,7 +69,7 @@ export function excluded(c: Config, path: string): boolean {
         .replace(/\*/g, '[^/]*')
         .replace(/\0/g, '.*') +
       '$'
-    if (new RegExp(source).test(path)) return true
+    if (new RegExp(source).test(path)) return true // nosemgrep: detect-non-literal-regexp -- the site owner's data-exclude glob, every metacharacter escaped; * and ** are its only wildcards
   }
   return false
 }
