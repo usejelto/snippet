@@ -1,6 +1,6 @@
 // Web event fields from spec/wire-v1.md §3 and §5.1; app-only fields are excluded.
 
-export type PropValue = string | number | boolean
+type PropValue = string | number | boolean
 export type Props = Record<string, PropValue>
 
 export interface EventOptions { interactive?: boolean }

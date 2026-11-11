@@ -28,8 +28,9 @@ make check   # the whole gate; CI's checks job runs the same command
 JELTO_CONTRACTS_DIR=<path-to-contracts> make test
 ```
 
-`make check` runs `lint`, `typecheck`, `build`, `test-source` and `security`. The
-browser suite, `make test`, needs Playwright and a contracts directory.
+`make check` runs `lint`, `deadcode`, `typecheck`, `build`, `test-source` and
+`security`. The browser suite, `make test`, needs Playwright and a contracts
+directory.
 
 One source tree builds every bundle. The cookie build is a separate build of the same source, never a second copy. Bundle budgets are enforced by `build.mjs`; changing one requires a specification change first.
 
@@ -49,12 +50,13 @@ The security targets run separate programs, not project dependencies.
 downloads and verifies it into `~/.cache/jelto-tools` (`JELTO_TOOLS_DIR`
 overrides the location), and `make tools` installs them all ahead of time.
 `vendor/quality/` is a checksummed snapshot of the contracts repository's
-`tools/quality/`; change it there, not here. ESLint is a development
-dependency, pinned by `package-lock.json`.
+`tools/quality/`; change it there, not here. ESLint and Knip are development
+dependencies, pinned by `package-lock.json`.
 
 | Target | Tool | What it checks |
 |---|---|---|
 | `make lint` | ESLint | the recommended JavaScript and TypeScript rules (`eslint.config.js`), no warnings |
+| `make deadcode` | Knip | files nothing imports, unused exports and dependencies, undeclared dependencies (`knip.config.ts`) |
 | `make secrets` | gitleaks | the whole Git history for credentials |
 | `make workflow-audit` | actionlint, zizmor | workflow syntax, script injection, permissions and pinning |
 | `make osv` | OSV-Scanner | `package-lock.json` against the OSV database, downloaded and matched locally |
@@ -71,6 +73,9 @@ place it applies, with the reason beside it:
 - ESLint: `// eslint-disable-next-line <rule> -- <reason>` above the line. A
   deliberately empty `catch` holds a comment saying why instead: the snippet
   never throws into the host page.
+- Knip: an entry, `ignoreBinaries` or `ignoreDependencies` line in
+  `knip.config.ts` with the reason above it, or `/** @public */` on an export
+  something outside the import graph uses.
 
 Never disable a rule, a file or a directory wholesale, and never relax a
 threshold to make a check pass.

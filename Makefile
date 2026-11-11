@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := check
-.PHONY: check lint typecheck build test-source test npm-audit security
+.PHONY: check lint deadcode typecheck build test-source test npm-audit security
 
 # The shared quality targets (hooks, tools, secrets, osv, workflow-audit, sast)
 # arrive from the contracts repository as a checksummed snapshot; `make inputs`
@@ -11,7 +11,7 @@ security: secrets workflow-audit osv npm-audit
 # The whole gate: what to run before a pull request, and what CI's checks job
 # runs. The browser suite (make test) needs a contracts directory and
 # Playwright's browsers, so it runs in its own job when CI names an archive.
-check: lint typecheck build test-source security
+check: lint deadcode typecheck build test-source security
 
 node_modules: package.json package-lock.json
 	npm ci --no-audit --no-fund
@@ -21,6 +21,10 @@ node_modules: package.json package-lock.json
 # the source, the tests and the build scripts.
 lint: node_modules
 	npx --no-install eslint --max-warnings 0 .
+
+# Knip (knip.config.ts): files nothing imports, unused exports and
+# dependencies, and dependencies used but not declared.
+deadcode: node_modules knip
 
 typecheck: node_modules
 	npm run check

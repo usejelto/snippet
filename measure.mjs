@@ -45,8 +45,7 @@ export function initLinks(_c: Config): void {}`,
     file: 'page.ts',
     rules: 'the pageview, the jelto() API, SPA and hash routing',
     stub: `import type { Config } from './types'
-export function initPage(_c: Config): void {}
-export function pageview(_o?: { u?: string; r?: string }): void {}`,
+export function initPage(_c: Config): void {}`,
   },
   {
     file: 'send.ts',

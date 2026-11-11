@@ -101,7 +101,7 @@ function moved(): void {
  * the whole event. Flush outgoing engagement before replacing the pageview; start new
  * engagement only after send succeeds.
  */
-export function pageview(opts?: { u?: string; r?: string }): void {
+function pageview(opts?: { u?: string; r?: string }): void {
   try {
     const o = opts || {}
     const u = o.u ? new URL(o.u, location.href).href : pageUrl(cfg)
