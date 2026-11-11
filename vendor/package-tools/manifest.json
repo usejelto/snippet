@@ -1,12 +1,12 @@
 {
   "name": "snippet-package-tools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "producer": "contracts",
-  "producer_commit": "fbeaa6be564dbe1587d63bf5260bff365e5e4951",
+  "producer_commit": "27995499ab9e4d3af00a2c49050d56518796080c",
   "files": {
     "package_component.py": {
       "source": "package_component.py",
-      "sha256": "3cbea0be70da3620590030193edf1412b436469ddb92c84776e399e5aa519d85"
+      "sha256": "975fea844cf390765d2c00337dc94dcd1251c9d5366bfd97e1db8ed28a3c05f8"
     }
   }
 }
