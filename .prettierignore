@@ -1,0 +1,12 @@
+# Prettier formats every other file with .prettierrc.json; CONTRIBUTING.md says
+# how its settings were chosen. Left alone:
+# build output and test reports,
+dist/
+test-results/
+playwright-report/
+# vendored snapshots, which their producers format,
+vendor/
+# the lockfile, which npm writes,
+package-lock.json
+# and Markdown, whose hand-wrapped prose and tables Prettier would rewrite.
+*.md
