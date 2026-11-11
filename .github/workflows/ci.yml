@@ -38,22 +38,17 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+          # make check scans the whole Git history for secrets.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Dependency vulnerability check
-        run: npm audit --audit-level=moderate --package-lock-only
-      - name: Type check
-        run: npm run check
-      - name: Build every bundle and assert its budget
-        # build.mjs enforces the emitted bundle budgets and cookie-mode
-        # separation; a budget change requires a specification change first.
-        run: npm run build
-      - name: Source boundaries
-        run: npm run test:source
+      # The same command a contributor runs: the type check, every bundle and
+      # its budget, the source boundaries, then the security scans (npm audit
+      # among them).
+      - name: Checks
+        run: make check
       - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
