@@ -15,7 +15,7 @@ let id = ''
 export function initVid(): void {
   try {
     id = read() || mint()
-  } catch {}
+  } catch { /* a refused or unreadable cookie leaves identity empty: cookieless counting */ }
 }
 
 /** The value of `vid`, or `""` when no field is to be sent. */

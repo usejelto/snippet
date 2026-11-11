@@ -25,12 +25,12 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
       const stored = JSON.parse(sessionStorage.getItem(key) || 'null')
       if (stored && (typeof stored.cohort === 'string' && stored.cohort.length <= 512 || stored.cohort === undefined && stored.pageview_id) && (!stored.pageview_id || typeof stored.pageview_id === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(stored.pageview_id)) && typeof stored.first === 'boolean' && stored.at <= Date.now() && stored.at > Date.now() - ttl) saved = stored
       else sessionStorage.removeItem(key)
-    } catch {}
+    } catch { /* unreadable or refused storage: start with nothing saved */ }
   }
   function remember(value: Context): Context {
     if (memory && (!saved || saved.cohort !== value.cohort || saved.first !== value.first || saved.pageview_id !== value.pageview_id || saved.at <= Date.now() - ttl)) {
       saved = { ...value, at: Date.now() }
-      try { sessionStorage.setItem(key, JSON.stringify(saved)) } catch {}
+      try { sessionStorage.setItem(key, JSON.stringify(saved)) } catch { /* refused storage: the context lasts for this page only */ }
     }
     return value
   }
@@ -59,7 +59,7 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   try {
     const url = new URL(tag.dataset.paymentEndpoint || '/api/v1/attribution/' + product, tag.src)
     if (/^https?:$/.test(url.protocol)) endpoint = url.href
-  } catch {}
+  } catch { /* an unparseable endpoint leaves payment reporting off */ }
   const environment = tag.dataset.environment || 'live'
   const sent = new Set<string>()
   function payment(value: unknown): void {
@@ -84,7 +84,7 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
       }
       const retry = (delay = 0) => ++tries < 3 && delay <= 300000 && setTimeout(deliver, Math.max(tries * 1000, delay))
       deliver()
-    } catch {}
+    } catch { /* a payment that cannot be reported is dropped, never thrown into the host page */ }
   }
   // Preserve the third argument of existing custom event calls.
   g.jelto = function(command: string, ...args: unknown[]) {
@@ -95,7 +95,7 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   api.q = []
   try {
     for (const call of pending) if (call[0] === 'payment') payment(call[1])
-  } catch {}
+  } catch { /* a malformed queued call must not throw into the host page */ }
   if (tag.dataset.disablePayments !== 'true' && mainTag?.dataset.disablePayments !== 'true') {
     const fields = ['session_id', 'order_id', 'checkout_id'] as const
     const patterns = [/^cs_(live|test)_[A-Za-z0-9]{1,240}$/, /^[1-9][0-9]{0,19}$/, /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i]
@@ -138,7 +138,7 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
       } else return
       link.href = url.href
       decorated.set(link, { before, after: link.href })
-    } catch {}
+    } catch { /* a link that cannot be parsed stays undecorated */ }
   }
   document.addEventListener('click', decorate, true)
   document.addEventListener('auxclick', decorate, true)

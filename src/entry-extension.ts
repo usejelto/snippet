@@ -21,13 +21,13 @@ if (product && product === main?.dataset.product && checkout && context()?.activ
       const group = value as Group | null
       return !!group && typeof group.id === 'string' && /^[a-z][a-z0-9_-]{0,63}$/.test(group.id) && typeof group.host === 'string' && Array.isArray(group.paths) && group.paths.length <= 20 && group.paths.every(path => typeof path === 'string' && path.startsWith('/') && path.length <= 2048)
     })
-  } catch {}
+  } catch { /* malformed entry groups: none are matched */ }
   const memory = checkout.dataset.paymentMemory !== 'off'
   const key = 'jelto_entry_' + product
   const ttl = 1800000
   let saved: Entry | undefined
   if (memory) {
-    try { saved = JSON.parse(sessionStorage.getItem(key) || 'null') as Entry | undefined } catch {}
+    try { saved = JSON.parse(sessionStorage.getItem(key) || 'null') as Entry | undefined } catch { /* unreadable storage: nothing saved */ }
   }
   g.__jeltoEntry = () => {
     const page = context()
@@ -35,7 +35,7 @@ if (product && product === main?.dataset.product && checkout && context()?.activ
     const now = Date.now()
     if (saved && (!Number.isFinite(saved.at) || saved.at > now || saved.at <= now - ttl || !groups.some(group => group.id === saved!.id))) {
       saved = undefined
-      if (memory) { try { sessionStorage.removeItem(key) } catch {} }
+      if (memory) { try { sessionStorage.removeItem(key) } catch { /* refused storage: forgotten for this page only */ } }
     }
     if (!saved) {
       try {
@@ -44,9 +44,9 @@ if (product && product === main?.dataset.product && checkout && context()?.activ
         const group = groups.find(group => group.host === url.hostname && excluded({ exclude: group.paths } as Config, path))
         if (group) {
           saved = { id: group.id, at: now }
-          if (memory) { try { sessionStorage.setItem(key, JSON.stringify(saved)) } catch {} }
+          if (memory) { try { sessionStorage.setItem(key, JSON.stringify(saved)) } catch { /* refused storage: kept for this page only */ } }
         }
-      } catch {}
+      } catch { /* an unparseable page URL matches no group */ }
     }
     return saved ? { jelto_entry_page: saved.id } : {}
   }

@@ -25,14 +25,15 @@ function changed(): void { dispatchEvent(new Event('jelto:pageview')) }
 export function initPage(c: Config): void {
   cfg = c
 
-  const g = window as unknown as Record<string, any>
-  const stub = g.jelto
+  const g = window as unknown as { jelto?: unknown }
+  // The loader stub's queue holds api() argument lists, replayed below.
+  const stub = g.jelto as { q?: Parameters<typeof api>[] } | undefined
   g.jelto = api
   const buffered = stub && stub.q
   if (buffered) {
     try {
       for (const call of buffered) api.apply(0, call)
-    } catch {}
+    } catch { /* a malformed pre-load queue must not throw into the host page */ }
     buffered.length = 0
   }
 
@@ -76,7 +77,7 @@ function api(cmd: string, a?: unknown, b?: unknown, options?: EventOptions): str
       const q = ((api as typeof api & { q?: unknown[] }).q ||= [])
       if (q.length < 20) q.push([cmd, a])
     }
-  } catch {}
+  } catch { /* a bad call must not throw into the host page */ }
 }
 
 /** Wait for router URL/title updates before sending; unchanged URLs are deduplicated. */
@@ -124,5 +125,5 @@ export function pageview(opts?: { u?: string; r?: string }): void {
     pageviewId = id
     pvStart(id, u)
     changed()
-  } catch {}
+  } catch { /* a failed pageview must not throw into the host page */ }
 }

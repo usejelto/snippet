@@ -20,7 +20,7 @@ if (tag?.dataset.product && tag.dataset.product === main?.dataset.product && new
       const params = new URLSearchParams(location.search)
       const cohort = params.get('jl') || ''
       if (/^https?:$/.test(source.protocol) && source.hostname !== location.hostname && domains.includes(source.hostname) && domains.includes(location.hostname) && params.getAll('jl').length === 1 && validCohort(cohort)) return { cohort, first: params.get('jt') === 'first' }
-    } catch {}
+    } catch { /* a missing or unparseable referrer relays no label */ }
   }
   const rewritten = new WeakMap<HTMLAnchorElement, { before: string; after: string }>()
   function decorate(event: MouseEvent): void {
@@ -40,7 +40,7 @@ if (tag?.dataset.product && tag.dataset.product === main?.dataset.product && new
       if (value.first) url.searchParams.set('jt', 'first')
       link.href = url.href
       rewritten.set(link, { before, after: link.href })
-    } catch {}
+    } catch { /* a link that cannot be parsed stays unrewritten */ }
   }
   let started = false
   const start = () => {

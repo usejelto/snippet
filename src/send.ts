@@ -72,7 +72,7 @@ export function send(ev: Outgoing): boolean {
     // queue, and later caller mutations cannot poison a pending batch.
     q.push(JSON.parse(JSON.stringify({ ...e, ...memory() })))
     return true
-  } catch {}
+  } catch { /* an event that cannot be queued is dropped: send() returns false */ }
   return false
 }
 
@@ -104,7 +104,7 @@ export function flush(force?: boolean, count = Math.min(q.length, 100)): void {
         .then((r) => r.text())
         .then(stop, hush)
     } else navigator.sendBeacon(cfg.endpoint, body)
-  } catch {}
+  } catch { /* a failed transport drops the batch, never throws into the host page */ }
 }
 
 function hush(): void {}
@@ -117,5 +117,5 @@ function stop(text: string): void {
       until = s.until * 1000
       dispatchEvent(new Event('jelto:pageview'))
     }
-  } catch {}
+  } catch { /* a response without a valid stop changes nothing */ }
 }

@@ -68,6 +68,7 @@ function fire(m: number): void {
  * Scroll sampling is passive and coalesced through requestAnimationFrame; height is
  * re-read at send time when ResizeObserver is unavailable.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- every init takes the config; engagement reads none of it
 export function initEngage(_c: Config): void {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') start()

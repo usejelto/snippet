@@ -21,6 +21,7 @@ interface Fixtures {
 
 export const test = base.extend<Fixtures, Worker>({
   mockdServer: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright reads a fixture's dependencies from this pattern, and this one has none
     async ({}, use) => {
       const server = await Mockd.start()
       await use(server)
@@ -69,6 +70,6 @@ export function validateAgainstSchema(bodies: string[]): void {
     })
   } catch (error) {
     const e = error as { stdout?: string; stderr?: string }
-    throw new Error(`spec/wire-v1.schema.json rejected a body:\n${e.stdout ?? ''}${e.stderr ?? ''}`)
+    throw new Error(`spec/wire-v1.schema.json rejected a body:\n${e.stdout ?? ''}${e.stderr ?? ''}`, { cause: error })
   }
 }

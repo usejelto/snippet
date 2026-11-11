@@ -57,7 +57,7 @@ function read(): { f: string; fd: string } | undefined {
         if (Date.parse(fd) >= Date.parse(today()) - 2592e6) return { f: v.slice(0, i), fd }
         localStorage.removeItem(KEY)
       }
-    } catch {}
+    } catch { /* unreadable storage: no first-touch memory */ }
   }
 }
 
@@ -110,6 +110,6 @@ export function remember(): void {
   if (l && !read()) {
     try {
       localStorage.setItem(KEY, l + '|' + today())
-    } catch {}
+    } catch { /* refused storage: nothing is remembered */ }
   }
 }
