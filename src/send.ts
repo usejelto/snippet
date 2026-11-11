@@ -12,19 +12,16 @@ const q: Ev[] = []
 let last = -1e9
 let until = 0
 
-export function stopped(): boolean { return Date.now() < until }
+export function stopped(): boolean {
+  return Date.now() < until
+}
 
 /**
  * The fallback fixes the UUID version and variant bits, so even all-zero random bytes
  * cannot produce the forbidden nil UUID.
  */
 export function uuid(): string {
-  return (
-    crypto.randomUUID?.() ||
-    ('' + 1e7 + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (d) =>
-      (+d ^ (crypto.getRandomValues(new Uint8Array(1))[0]! & (15 >> (+d / 4)))).toString(16),
-    )
-  )
+  return crypto.randomUUID?.() || ('' + 1e7 + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (d) => (+d ^ (crypto.getRandomValues(new Uint8Array(1))[0]! & (15 >> (+d / 4)))).toString(16))
 }
 
 /**
@@ -72,7 +69,9 @@ export function send(ev: Outgoing): boolean {
     // queue, and later caller mutations cannot poison a pending batch.
     q.push(JSON.parse(JSON.stringify({ ...e, ...memory() })))
     return true
-  } catch { /* an event that cannot be queued is dropped: send() returns false */ }
+  } catch {
+    /* an event that cannot be queued is dropped: send() returns false */
+  }
   return false
 }
 
@@ -104,7 +103,9 @@ export function flush(force?: boolean, count = Math.min(q.length, 100)): void {
         .then((r) => r.text())
         .then(stop, hush)
     } else navigator.sendBeacon(cfg.endpoint, body)
-  } catch { /* a failed transport drops the batch, never throws into the host page */ }
+  } catch {
+    /* a failed transport drops the batch, never throws into the host page */
+  }
 }
 
 function hush(): void {}
@@ -117,5 +118,7 @@ function stop(text: string): void {
       until = s.until * 1000
       dispatchEvent(new Event('jelto:pageview'))
     }
-  } catch { /* a response without a valid stop changes nothing */ }
+  } catch {
+    /* a response without a valid stop changes nothing */
+  }
 }

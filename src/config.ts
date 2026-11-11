@@ -17,7 +17,9 @@ export function readConfig(): Config | null {
       const url = new URL(d.endpoint, location.href)
       if (!/^https?:$/.test(url.protocol) || url.username || url.password || url.href.includes('#')) return null
       endpoint = url.href
-    } catch { return null }
+    } catch {
+      return null
+    }
   }
   return {
     product: d.product,
@@ -46,10 +48,7 @@ export function blocked(c: Config): boolean {
   if (navigator.webdriver || w._phantom || w.__nightmare || w.Cypress) return true
   if (location.protocol === 'file:') return true
   const h = location.hostname
-  if (
-    !c.allowLocalhost &&
-    (/^localhost$/.test(h) || /^127(\.\d+){0,2}\.\d+$/.test(h) || /^\[::1?\]$/.test(h) || /\.local$/.test(h))
-  ) {
+  if (!c.allowLocalhost && (/^localhost$/.test(h) || /^127(\.\d+){0,2}\.\d+$/.test(h) || /^\[::1?\]$/.test(h) || /\.local$/.test(h))) {
     return true
   }
   return excluded(c, pagePath(c))

@@ -24,9 +24,7 @@ test('T46 — the UTM cohort is the same string T5 puts in jl', async ({ page, s
   expect(await page.evaluate(() => window.jelto('cohort'))).toBe('producthunt~social')
 
   // The same value, from the same computation, on the link the click handler rewrites.
-  await page.evaluate(() =>
-    document.getElementById('dl')!.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 })),
-  )
+  await page.evaluate(() => document.getElementById('dl')!.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 })))
   // The RESOLVED href, which is what the navigation uses and what T5 pins as
   // the navigation URL. The download-decoration rule says "append `jl` to the href"; it
   // does not require a relative attribute to stay relative, and writing back the absolute
@@ -44,7 +42,7 @@ test('T47 — an external referrer with no UTM returns ref:<host>', async ({ pag
   expect(await page.evaluate(() => window.jelto('cohort'))).toBe('ref:news.ycombinator.com')
 })
 
-test('T48 — under memory, the remembered first touch wins over today\'s own source', async ({ page, site }) => {
+test("T48 — under memory, the remembered first touch wins over today's own source", async ({ page, site }) => {
   await lifecycle(page)
   await page.clock.setFixedTime(new Date('2026-08-05T10:00:00Z'))
   await page.addInitScript(() => localStorage.setItem('jelto_first', 'producthunt|2026-08-01'))

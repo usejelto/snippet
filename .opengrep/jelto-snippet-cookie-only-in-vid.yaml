@@ -13,18 +13,18 @@ rules:
       cookie: move the access into vid.ts, which the cookieless build drops.
     paths:
       include:
-        - "/src/"
-        - "/.opengrep/jelto-snippet-cookie-only-in-vid.*"
+        - '/src/'
+        - '/.opengrep/jelto-snippet-cookie-only-in-vid.*'
       exclude:
-        - "/src/vid.ts"
+        - '/src/vid.ts'
     pattern-either:
       - pattern: document.cookie
       - pattern: document?.cookie
       - pattern: $GLOBAL.document.cookie
       - pattern: document["cookie"]
       - pattern: $GLOBAL.document["cookie"]
-      - pattern: "const { cookie } = document"
-      - pattern: "const { cookie: $NAME } = document"
+      - pattern: 'const { cookie } = document'
+      - pattern: 'const { cookie: $NAME } = document'
       - patterns:
           - pattern-inside: |
               $DOC = document

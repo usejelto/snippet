@@ -12,7 +12,7 @@ const mainTag = document.querySelector<HTMLScriptElement>('script[data-product][
 const product = tag?.dataset.product || mainTag?.dataset.product
 const api = g.jelto
 const query = new URLSearchParams(location.search)
-const initial = query.get('jelto_ignore') === '1' ? undefined : api?.('attribution') as Context | undefined
+const initial = query.get('jelto_ignore') === '1' ? undefined : (api?.('attribution') as Context | undefined)
 if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoCheckoutMetadata) {
   const memory = tag.dataset.paymentMemory !== 'off'
   const key = 'jelto_payment_' + product
@@ -23,14 +23,21 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   if (memory) {
     try {
       const stored = JSON.parse(sessionStorage.getItem(key) || 'null')
-      if (stored && (typeof stored.cohort === 'string' && stored.cohort.length <= 512 || stored.cohort === undefined && stored.pageview_id) && (!stored.pageview_id || typeof stored.pageview_id === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(stored.pageview_id)) && typeof stored.first === 'boolean' && stored.at <= Date.now() && stored.at > Date.now() - ttl) saved = stored
+      if (stored && ((typeof stored.cohort === 'string' && stored.cohort.length <= 512) || (stored.cohort === undefined && stored.pageview_id)) && (!stored.pageview_id || (typeof stored.pageview_id === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(stored.pageview_id))) && typeof stored.first === 'boolean' && stored.at <= Date.now() && stored.at > Date.now() - ttl)
+        saved = stored
       else sessionStorage.removeItem(key)
-    } catch { /* unreadable or refused storage: start with nothing saved */ }
+    } catch {
+      /* unreadable or refused storage: start with nothing saved */
+    }
   }
   function remember(value: Context): Context {
     if (memory && (!saved || saved.cohort !== value.cohort || saved.first !== value.first || saved.pageview_id !== value.pageview_id || saved.at <= Date.now() - ttl)) {
       saved = { ...value, at: Date.now() }
-      try { sessionStorage.setItem(key, JSON.stringify(saved)) } catch { /* refused storage: the context lasts for this page only */ }
+      try {
+        sessionStorage.setItem(key, JSON.stringify(saved))
+      } catch {
+        /* refused storage: the context lasts for this page only */
+      }
     }
     return value
   }
@@ -39,7 +46,7 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
     let now = api!('attribution') as Context
     if (!now || typeof now.cohort !== 'string' || now.cohort.length > 512) return null
     const q = new URLSearchParams(location.search)
-    const returning = ['session_id', 'order_id', 'checkout_id'].some(k => q.has(k))
+    const returning = ['session_id', 'order_id', 'checkout_id'].some((k) => q.has(k))
     const provider = now.cohort.startsWith('ref:') && isProvider(now.cohort.slice(4))
     if ((returning || provider) && saved && saved.at > Date.now() - ttl) return saved
     if (returning || provider) return now.cohort && !provider ? now : null
@@ -59,7 +66,9 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   try {
     const url = new URL(tag.dataset.paymentEndpoint || '/api/v1/attribution/' + product, tag.src)
     if (/^https?:$/.test(url.protocol)) endpoint = url.href
-  } catch { /* an unparseable endpoint leaves payment reporting off */ }
+  } catch {
+    /* an unparseable endpoint leaves payment reporting off */
+  }
   const environment = tag.dataset.environment || 'live'
   const sent = new Set<string>()
   function payment(value: unknown): void {
@@ -75,19 +84,23 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
       let tries = 0
       const deliver = () => {
         if (!enabled()) return
-        fetch(endpoint, { method: 'POST', body, credentials: 'omit', referrerPolicy: 'no-referrer', keepalive: true }).then(response => {
-          if (response.status === 429 || response.status >= 500) {
-            const after = response.headers.get('Retry-After') || ''
-            retry(Number(after) * 1000 || Date.parse(after) - Date.now() || 0)
-          }
-        }).catch(() => retry())
+        fetch(endpoint, { method: 'POST', body, credentials: 'omit', referrerPolicy: 'no-referrer', keepalive: true })
+          .then((response) => {
+            if (response.status === 429 || response.status >= 500) {
+              const after = response.headers.get('Retry-After') || ''
+              retry(Number(after) * 1000 || Date.parse(after) - Date.now() || 0)
+            }
+          })
+          .catch(() => retry())
       }
       const retry = (delay = 0) => ++tries < 3 && delay <= 300000 && setTimeout(deliver, Math.max(tries * 1000, delay))
       deliver()
-    } catch { /* a payment that cannot be reported is dropped, never thrown into the host page */ }
+    } catch {
+      /* a payment that cannot be reported is dropped, never thrown into the host page */
+    }
   }
   // Preserve the third argument of existing custom event calls.
-  g.jelto = function(command: string, ...args: unknown[]) {
+  g.jelto = function (command: string, ...args: unknown[]) {
     if (command === 'payment') payment(args[0])
     else return (api as (...args: unknown[]) => unknown)(command, ...args)
   } as API
@@ -95,11 +108,13 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
   api.q = []
   try {
     for (const call of pending) if (call[0] === 'payment') payment(call[1])
-  } catch { /* a malformed queued call must not throw into the host page */ }
+  } catch {
+    /* a malformed queued call must not throw into the host page */
+  }
   if (tag.dataset.disablePayments !== 'true' && mainTag?.dataset.disablePayments !== 'true') {
     const fields = ['session_id', 'order_id', 'checkout_id'] as const
     const patterns = [/^cs_(live|test)_[A-Za-z0-9]{1,240}$/, /^[1-9][0-9]{0,19}$/, /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i]
-    if (fields.filter(k => query.has(k)).length === 1) {
+    if (fields.filter((k) => query.has(k)).length === 1) {
       fields.forEach((field, index) => {
         const value = query.get(field) || ''
         if (query.getAll(field).length === 1 && patterns[index]!.test(value) && (index !== 0 || value.startsWith('cs_' + environment + '_')) && (index !== 2 || value.replace(/[-0]/g, ''))) payment({ [field]: value })
@@ -125,7 +140,12 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
         if ((value.jelto_cohort || value.jelto_pageview) && !params.has('client_reference_id')) {
           const bytes = new TextEncoder().encode(value.jelto_cohort || '')
           const prefix = (value.jelto_jt === 'first' ? 'jf' : 'jl') + (value.jelto_pageview ? '2_' + value.jelto_pageview + '_' : '1_')
-          let reference = prefix + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+          let reference =
+            prefix +
+            btoa(String.fromCharCode(...bytes))
+              .replace(/\+/g, '-')
+              .replace(/\//g, '_')
+              .replace(/=+$/, '')
           if (reference.length > 200 && value.jelto_pageview) reference = prefix
           if (reference.length <= 200) params.set('client_reference_id', reference)
         }
@@ -138,7 +158,9 @@ if (product && tag && api && typeof initial?.cohort === 'string' && !g.jeltoChec
       } else return
       link.href = url.href
       decorated.set(link, { before, after: link.href })
-    } catch { /* a link that cannot be parsed stays undecorated */ }
+    } catch {
+      /* a link that cannot be parsed stays undecorated */
+    }
   }
   document.addEventListener('click', decorate, true)
   document.addEventListener('auxclick', decorate, true)

@@ -14,11 +14,17 @@ for (const bundle of [CDN, CDN_COOKIE]) {
       ;(window as unknown as { __observers: typeof counters }).__observers = counters
       const Intersection = window.IntersectionObserver
       window.IntersectionObserver = class extends Intersection {
-        constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) { super(callback, options); counters.intersection++ }
+        constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+          super(callback, options)
+          counters.intersection++
+        }
       }
       const Mutation = window.MutationObserver
       window.MutationObserver = class extends Mutation {
-        constructor(callback: MutationCallback) { super(callback); counters.mutation++ }
+        constructor(callback: MutationCallback) {
+          super(callback)
+          counters.mutation++
+        }
       }
     })
     await site.install()
@@ -39,7 +45,7 @@ test('relative endpoint is resolved against the page and context is only a pagev
   await spyOnStorage(page)
   await site.install()
   const bodies: string[] = []
-  await page.route(`${SITE_ORIGIN}/custom-events`, async route => {
+  await page.route(`${SITE_ORIGIN}/custom-events`, async (route) => {
     bodies.push(route.request().postData()!)
     await route.fulfill({ status: 202, body: '{}' })
   })
@@ -60,12 +66,13 @@ test('visibility delay cancels on hiding and helper duplication cannot duplicate
   await page.waitForTimeout(150)
   await hide(page)
   await page.waitForTimeout(700)
-  expect((await mockd.events()).filter(event => event.n === 'pricing:seen')).toHaveLength(0)
+  expect((await mockd.events()).filter((event) => event.n === 'pricing:seen')).toHaveLength(0)
   await show(page)
-  await expect.poll(async () => (await mockd.events()).filter(event => event.n === 'pricing:seen').length).toBe(1)
-  await hide(page); await show(page)
+  await expect.poll(async () => (await mockd.events()).filter((event) => event.n === 'pricing:seen').length).toBe(1)
+  await hide(page)
+  await show(page)
   await page.waitForTimeout(700)
-  const events = (await mockd.events()).filter(event => event.n === 'pricing:seen')
+  const events = (await mockd.events()).filter((event) => event.n === 'pricing:seen')
   expect(events).toHaveLength(1)
   expect(events[0]!.i).toBe(false)
   expect(events[0]!.props).toBeUndefined()
@@ -81,15 +88,21 @@ test('zero visibility threshold observes entry from an adjacent edge and cancels
   // with ratio=0. A threshold of exactly zero emits no later crossing when the
   // target moves further in, so rejecting that first record alone loses it.
   await page.waitForTimeout(700)
-  expect((await mockd.events()).filter(event => event.n === 'pricing:seen')).toHaveLength(0)
-  await page.locator('#goal').evaluate(element => { (element as HTMLElement).style.top = 'calc(100vh - 1px)' })
+  expect((await mockd.events()).filter((event) => event.n === 'pricing:seen')).toHaveLength(0)
+  await page.locator('#goal').evaluate((element) => {
+    ;(element as HTMLElement).style.top = 'calc(100vh - 1px)'
+  })
   await page.waitForTimeout(200)
-  await page.locator('#goal').evaluate(element => { (element as HTMLElement).style.top = '100vh' })
+  await page.locator('#goal').evaluate((element) => {
+    ;(element as HTMLElement).style.top = '100vh'
+  })
   await page.waitForTimeout(1200)
-  expect((await mockd.events()).filter(event => event.n === 'pricing:seen')).toHaveLength(0)
-  await page.locator('#goal').evaluate(element => { (element as HTMLElement).style.top = 'calc(100vh - 1px)' })
-  await expect.poll(async () => (await mockd.events()).filter(event => event.n === 'pricing:seen').length).toBe(1)
-  expect((await mockd.events()).find(event => event.n === 'pricing:seen')!.i).toBe(false)
+  expect((await mockd.events()).filter((event) => event.n === 'pricing:seen')).toHaveLength(0)
+  await page.locator('#goal').evaluate((element) => {
+    ;(element as HTMLElement).style.top = 'calc(100vh - 1px)'
+  })
+  await expect.poll(async () => (await mockd.events()).filter((event) => event.n === 'pricing:seen').length).toBe(1)
+  expect((await mockd.events()).find((event) => event.n === 'pricing:seen')!.i).toBe(false)
   validateAgainstSchema(await mockd.bodies())
 })
 
@@ -100,14 +113,14 @@ for (const navigation of ['spa', 'hash', 'manual'] as const) {
     site.defaults({ attrs: navigation === 'hash' ? { hash: true } : navigation === 'manual' ? { autoPageview: 'off' } : {}, head: helper, body: goal })
     await site.goto('/')
     if (navigation === 'manual') await page.evaluate(() => window.jelto('pageview'))
-    await expect.poll(async () => (await mockd.events()).filter(event => event.n === 'pricing:seen').length).toBe(1)
-    await page.evaluate(kind => {
+    await expect.poll(async () => (await mockd.events()).filter((event) => event.n === 'pricing:seen').length).toBe(1)
+    await page.evaluate((kind) => {
       if (kind === 'hash') location.hash = '/pricing'
       else if (kind === 'manual') window.jelto('pageview')
       else history.pushState({}, '', '/pricing')
     }, navigation)
-    await expect.poll(async () => (await mockd.events()).filter(event => event.n === 'pricing:seen').length).toBe(2)
-    const pageviews = (await mockd.events()).filter(event => event.n === 'pageview')
+    await expect.poll(async () => (await mockd.events()).filter((event) => event.n === 'pricing:seen').length).toBe(2)
+    const pageviews = (await mockd.events()).filter((event) => event.n === 'pageview')
     expect(pageviews).toHaveLength(2)
     expect(pageviews[0]!.id).not.toBe(pageviews[1]!.id)
     validateAgainstSchema(await mockd.bodies())
@@ -119,13 +132,13 @@ test('excluded SPA suspends visibility and ends previous engagement before resum
   await site.install()
   site.defaults({ attrs: { exclude: '/admin/**' }, head: helper, body: goal })
   await site.goto('/')
-  await expect.poll(async () => (await mockd.events()).filter(event => event.n === 'pricing:seen').length).toBe(1)
+  await expect.poll(async () => (await mockd.events()).filter((event) => event.n === 'pricing:seen').length).toBe(1)
   await page.evaluate(() => history.pushState({}, '', '/admin/private'))
   expect(await page.evaluate(() => (window.jelto('context') as { active: boolean }).active)).toBe(false)
   await page.waitForTimeout(1200)
   const excluded = await mockd.events()
-  expect(excluded.filter(event => event.n === 'pageview')).toHaveLength(1)
-  expect(excluded.filter(event => event.n === 'engagement')).toHaveLength(1)
+  expect(excluded.filter((event) => event.n === 'pageview')).toHaveLength(1)
+  expect(excluded.filter((event) => event.n === 'engagement')).toHaveLength(1)
   await page.evaluate(() => history.pushState({}, '', '/pricing'))
-  await expect.poll(async () => (await mockd.events()).filter(event => event.n === 'pricing:seen').length).toBe(2)
+  await expect.poll(async () => (await mockd.events()).filter((event) => event.n === 'pricing:seen').length).toBe(2)
 })

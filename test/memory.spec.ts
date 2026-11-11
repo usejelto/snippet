@@ -52,11 +52,7 @@ test('T28 — first touch is stored, then carried as f/fd and as jl=…&jt=first
   expect(page.url()).toBe(SITE_ORIGIN + '/dl/App.pkg?jl=producthunt&jt=first')
 })
 
-test('T29 — an entry 31 days old is deleted, sends no f, and is replaced by this page\'s source', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test("T29 — an entry 31 days old is deleted, sends no f, and is replaced by this page's source", async ({ page, site, mockd }) => {
   await lifecycle(page)
   await page.clock.setFixedTime(new Date('2026-09-01T10:00:00Z'))
   await seed(page, 'producthunt|2026-08-01')
@@ -80,11 +76,7 @@ test('T30 — no source and no referrer stores nothing and sends no f', async ({
   expect(await page.evaluate(() => localStorage.getItem('jelto_first'))).toBeNull()
 })
 
-test('T31 — a valid entry is never overwritten; the page\'s own source still reaches u', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test("T31 — a valid entry is never overwritten; the page's own source still reaches u", async ({ page, site, mockd }) => {
   await lifecycle(page)
   await page.clock.setFixedTime(new Date('2026-08-05T10:00:00Z'))
   await seed(page, 'producthunt|2026-08-01')

@@ -17,9 +17,7 @@ export default defineConfig({
     // Network Access checks for that test topology; keep browser security enabled so CSP
     // and origin rules remain testable.
     launchOptions: {
-      args: [
-        '--disable-features=LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults',
-      ],
+      args: ['--disable-features=LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults'],
     },
     // Every URL in the suite is absolute and served by a route handler; there
     // is no origin to be relative to.

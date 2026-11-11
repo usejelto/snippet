@@ -104,10 +104,7 @@ if (enforced.status !== 0) process.exitCode = 1
 
 const whole = build(here)
 process.stdout.write(
-  `\n  the whole snippet${' '.repeat(21)}${String(whole.raw).padStart(6)} B raw   ${String(whole.gzip).padStart(5)} B gzipped   (jelto.js)\n\n` +
-    `  MARGINAL COST of each rule group — what removing it alone would save.\n` +
-    `  These do not sum to the total: gzip shares one dictionary across the file,\n` +
-    `  and every stubbed build still carries the call sites of what it removed.\n\n`,
+  `\n  the whole snippet${' '.repeat(21)}${String(whole.raw).padStart(6)} B raw   ${String(whole.gzip).padStart(5)} B gzipped   (jelto.js)\n\n` + `  MARGINAL COST of each rule group — what removing it alone would save.\n` + `  These do not sum to the total: gzip shares one dictionary across the file,\n` + `  and every stubbed build still carries the call sites of what it removed.\n\n`,
 )
 
 for (const group of GROUPS) {
@@ -121,15 +118,10 @@ for (const group of GROUPS) {
     writeFileSync(path.join(dir, 'src', group.file), group.stub)
     const without = build(dir)
     const cost = whole.gzip - without.gzip
-    process.stdout.write(
-      `  ${group.file.padEnd(12)} ${String(cost).padStart(5)} B gzipped   ${group.rules}\n`,
-    )
+    process.stdout.write(`  ${group.file.padEnd(12)} ${String(cost).padStart(5)} B gzipped   ${group.rules}\n`)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
 }
 
-process.stdout.write(
-  `\n  The floor is not zero: an empty index.ts still builds to an IIFE with the\n` +
-    `  shared types erased, so the residue below the last row is the wrapper.\n\n`,
-)
+process.stdout.write(`\n  The floor is not zero: an empty index.ts still builds to an IIFE with the\n` + `  shared types erased, so the residue below the last row is the wrapper.\n\n`)

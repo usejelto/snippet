@@ -137,15 +137,7 @@ export class Site {
             .map(([k, v]) => (v === true ? `data-${kebab(k)}` : `data-${kebab(k)}="${escapeAttr(String(v))}"`))
             .join(' ') +
           ` src="${spec.src ?? this.bundle}"></script>`
-    return (
-      '<!doctype html><html><head><meta charset="utf-8"><title>jelto fixture</title>' +
-      (spec.before ?? '') +
-      tag +
-      (spec.head ?? '') +
-      '</head><body>' +
-      (spec.body ?? '') +
-      '</body></html>'
-    )
+    return '<!doctype html><html><head><meta charset="utf-8"><title>jelto fixture</title>' + (spec.before ?? '') + tag + (spec.head ?? '') + '</head><body>' + (spec.body ?? '') + '</body></html>'
   }
 
   /**

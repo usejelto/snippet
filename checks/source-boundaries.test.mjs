@@ -18,9 +18,9 @@ test('tracking modes share one entry point and helpers are separate optional bun
 
 test('cookie access is confined to vid.ts and build guards verify both emitted modes', () => {
   const directory = new URL('../src/', import.meta.url)
-  const files = readdirSync(directory).filter(name => name.endsWith('.ts'))
+  const files = readdirSync(directory).filter((name) => name.endsWith('.ts'))
   assert.ok(files.length > 0)
-  const touching = files.filter(name => /document\s*\.\s*cookie/.test(readFileSync(new URL(name, directory), 'utf8')))
+  const touching = files.filter((name) => /document\s*\.\s*cookie/.test(readFileSync(new URL(name, directory), 'utf8')))
   assert.deepEqual(touching, ['vid.ts'])
   assert.ok(build().includes('DEFAULT build and carries cookie code'))
   assert.ok(build().includes('COOKIE build and does not carry cookie mode'))

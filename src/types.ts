@@ -3,9 +3,15 @@
 type PropValue = string | number | boolean
 export type Props = Record<string, PropValue>
 
-export interface EventOptions { interactive?: boolean }
+export interface EventOptions {
+  interactive?: boolean
+}
 /** Page lifecycle only; never a visitor identifier or a storage read. */
-export interface PageContext { active: boolean; pageviewId: string | null; url: string }
+export interface PageContext {
+  active: boolean
+  pageviewId: string | null
+  url: string
+}
 
 /** One event on the wire. §3's common fields plus §5.1's web fields. */
 export interface Ev {

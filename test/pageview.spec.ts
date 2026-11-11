@@ -8,9 +8,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const pkg = JSON.parse(
-  readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../package.json'), 'utf8'),
-) as { version: string }
+const pkg = JSON.parse(readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../package.json'), 'utf8')) as { version: string }
 const CLIENT_VERSION = 'web/' + pkg.version
 
 test('T1 — a plain load sends one pageview with u (no fragment), r, w, l and v', async ({ page, site, mockd }) => {
@@ -154,11 +152,7 @@ test('T5c — data-allow-localhost sends the pageview from http://localhost:3000
   expect(events.map((e) => [e.n, e.u])).toEqual([['pageview', 'http://localhost:3000/']])
 })
 
-test('T14 — pushState sends a second pageview ~300 ms later; replaceState to the same path sends nothing', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T14 — pushState sends a second pageview ~300 ms later; replaceState to the same path sends nothing', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.defaults({})
@@ -203,11 +197,7 @@ test('T15 — data-hash: the fragment is in u and hashchange sends a pageview', 
   expect(hashed).toContain(SITE_ORIGIN + '/app#/docs')
 })
 
-test('T41 — data-auto-pageview="off": nothing on load or pushState, two manual pageviews, engagement between them', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T41 — data-auto-pageview="off": nothing on load or pushState, two manual pageviews, engagement between them', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.defaults({ attrs: { autoPageview: 'off' } })

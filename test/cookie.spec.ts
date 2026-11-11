@@ -38,8 +38,7 @@ const VID = /^[A-Za-z0-9_-]{22}$/
 /** Thirteen months, in seconds: the cookie's fixed lifetime. */
 const THIRTEEN_MONTHS = 34128e3
 
-const jar = async (page: import('@playwright/test').Page, name = 'jelto_vid') =>
-  (await page.context().cookies()).find((c) => c.name === name)
+const jar = async (page: import('@playwright/test').Page, name = 'jelto_vid') => (await page.context().cookies()).find((c) => c.name === name)
 
 test('TC1 — the cookie build sets jelto_vid and puts it on the pageview as vid', async ({ page, site, mockd }) => {
   await lifecycle(page)
@@ -99,11 +98,7 @@ test('TC2 — a returning browser keeps its id, and the cookie is not rewritten'
   expect(onReturn.filter((c) => c === 'cookie.set')).toHaveLength(0)
 })
 
-test('TC3 — the cookie is host-only, path=/, SameSite=Lax, Secure, and lasts thirteen months', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('TC3 — the cookie is host-only, path=/, SameSite=Lax, Secure, and lasts thirteen months', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.bundle = CDN_COOKIE
@@ -132,11 +127,7 @@ test('TC3 — the cookie is host-only, path=/, SameSite=Lax, Secure, and lasts t
   expect(lifetime).toBeLessThan(400 * 86400)
 })
 
-test('TC4 — a browser that refuses the cookie sends no vid at all, never a fresh one per pageview', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('TC4 — a browser that refuses the cookie sends no vid at all, never a fresh one per pageview', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await refuseCookies(page)
   await site.install()
@@ -170,9 +161,7 @@ test('TC5 — the cookie build touches the cookie and NO other storage API', asy
   site.defaults({ body: '<a id="dl" href="/dl/App.pkg">d</a>' })
   await site.goto('/?utm_source=producthunt')
   await mockd.awaitEvents(1)
-  await page.evaluate(() =>
-    document.getElementById('dl')!.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 })),
-  )
+  await page.evaluate(() => document.getElementById('dl')!.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 })))
   await mockd.awaitEvents(2)
 
   // T27's mirror. `data-memory` is absent, so the localStorage branch does
@@ -247,9 +236,7 @@ test('TC9 — every cookie-mode body validates against spec/wire-v1.schema.json'
   site.defaults({ attrs: { memory: 'on' }, body: '<a id="dl" href="/dl/App.pkg">d</a>' })
   await site.goto('/?utm_source=producthunt')
   await mockd.awaitEvents(1)
-  await page.evaluate(() =>
-    document.getElementById('dl')!.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 })),
-  )
+  await page.evaluate(() => document.getElementById('dl')!.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 })))
   await mockd.awaitEvents(2)
   await hide(page)
   await mockd.awaitEvents(3)

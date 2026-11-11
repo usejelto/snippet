@@ -5,12 +5,16 @@ import { PRODUCT } from './harness/site'
 const helper = '<script defer data-environment="test" src="https://cdn.jelto.example/jelto.checkout.js"></script>'
 const endpoint = `https://cdn.jelto.example/api/v1/attribution/${PRODUCT}`
 
-for (const [field, value] of [['session_id', 'cs_test_fixture'], ['order_id', '123'], ['checkout_id', '11111111-1111-4111-8111-111111111111']]) {
+for (const [field, value] of [
+  ['session_id', 'cs_test_fixture'],
+  ['order_id', '123'],
+  ['checkout_id', '11111111-1111-4111-8111-111111111111'],
+]) {
   test(`payment return ${field} retains the original channel and pageview in this tab`, async ({ page, site }) => {
     await lifecycle(page)
     await site.install()
     const requests: Record<string, unknown>[] = []
-    await page.route(endpoint, async route => {
+    await page.route(endpoint, async (route) => {
       requests.push(route.request().postDataJSON())
       expect(route.request().headers()['referer']).toBeUndefined()
       await route.fulfill({ status: 202, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': 'https://site.example' }, body: '{"status":"accepted"}' })
@@ -28,7 +32,7 @@ test('pre-load payment survives both scripts and automatic opt-out', async ({ pa
   await lifecycle(page)
   await site.install()
   const requests: Record<string, unknown>[] = []
-  await page.route(endpoint, async route => {
+  await page.route(endpoint, async (route) => {
     requests.push(route.request().postDataJSON())
     await route.fulfill({ status: 202, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': 'https://site.example' }, body: '{"status":"accepted"}' })
   })
@@ -44,7 +48,10 @@ test('provider return with no retained context does not invent acquisition', asy
   await lifecycle(page)
   await site.install()
   const requests: unknown[] = []
-  await page.route(endpoint, async route => { requests.push(route.request()); await route.abort() })
+  await page.route(endpoint, async (route) => {
+    requests.push(route.request())
+    await route.abort()
+  })
   site.defaults({ head: helper })
   await site.goto('/welcome?session_id=cs_test_fixture')
   await page.evaluate(() => (window as unknown as { jelto: (c: string, p: unknown) => void }).jelto('payment', { email: 'buyer@example.com' }))
@@ -55,7 +62,7 @@ test('an internal navigation links its own pageview without manufacturing Direct
   await lifecycle(page)
   await site.install()
   const requests: Record<string, unknown>[] = []
-  await page.route(endpoint, async route => {
+  await page.route(endpoint, async (route) => {
     requests.push(route.request().postDataJSON())
     await route.fulfill({ status: 202, headers: { 'Access-Control-Allow-Origin': 'https://site.example' }, body: '{}' })
   })

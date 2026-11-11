@@ -87,13 +87,7 @@ test('a persistent download link recomputes its attribution and preserves page-a
     values.push(click(), click())
     return values
   })
-  expect(hrefs).toEqual([
-    SITE_ORIGIN + '/dl/App.pkg?jl=first',
-    SITE_ORIGIN + '/dl/App.pkg?jl=second',
-    SITE_ORIGIN + '/dl/App.pkg',
-    SITE_ORIGIN + '/dl/App.pkg?jl=customer',
-    SITE_ORIGIN + '/dl/App.pkg?jl=customer',
-  ])
+  expect(hrefs).toEqual([SITE_ORIGIN + '/dl/App.pkg?jl=first', SITE_ORIGIN + '/dl/App.pkg?jl=second', SITE_ORIGIN + '/dl/App.pkg', SITE_ORIGIN + '/dl/App.pkg?jl=customer', SITE_ORIGIN + '/dl/App.pkg?jl=customer'])
 })
 
 test('T9 — a GitHub release asset is a download, not an outbound click', async ({ page, site, mockd }) => {
@@ -123,11 +117,7 @@ test('T10 — a download attribute makes any href a download', async ({ page, si
   expect(click!.props).toEqual({ file: 'x' })
 })
 
-test('a data: download href is out of scope: no click:download, no rewrite, no leaked payload', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('a data: download href is out of scope: no click:download, no rewrite, no leaked payload', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.defaults({
@@ -146,11 +136,7 @@ test('a data: download href is out of scope: no click:download, no rewrite, no l
   for (const body of await mockd.bodies()) expect(body).not.toContain('alice@example.com')
 })
 
-test('a blob: download href is unchanged after click, even with a cohort available (?utm_source=producthunt)', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('a blob: download href is unchanged after click, even with a cohort available (?utm_source=producthunt)', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.defaults({ body: '<a id="dl" download="export.csv">export</a>' })
@@ -168,18 +154,11 @@ test('a blob: download href is unchanged after click, even with a cohort availab
   expect(after).toBe(before)
 })
 
-test('T11 — a modifier click, a middle click and target=_blank are never intercepted', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T11 — a modifier click, a middle click and target=_blank are never intercepted', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.defaults({
-    body:
-      '<a id="meta" href="/dl/A.pkg">a</a>' +
-      '<a id="aux" href="/dl/B.pkg">b</a>' +
-      '<a id="blank" href="/dl/C.pkg" target="_blank">c</a>',
+    body: '<a id="meta" href="/dl/A.pkg">a</a>' + '<a id="aux" href="/dl/B.pkg">b</a>' + '<a id="blank" href="/dl/C.pkg" target="_blank">c</a>',
   })
   await site.goto('/download?utm_source=producthunt')
   await mockd.awaitEvents(1)
@@ -192,25 +171,15 @@ test('T11 — a modifier click, a middle click and target=_blank are never inter
   // The page itself never navigated: none of the three was intercepted.
   expect(page.url()).toBe(SITE_ORIGIN + '/download?utm_source=producthunt')
 
-  const hrefs = await page.evaluate(() =>
-    ['meta', 'aux', 'blank'].map((id) => (document.getElementById(id) as HTMLAnchorElement).href),
-  )
-  expect(hrefs).toEqual([
-    SITE_ORIGIN + '/dl/A.pkg?jl=producthunt',
-    SITE_ORIGIN + '/dl/B.pkg?jl=producthunt',
-    SITE_ORIGIN + '/dl/C.pkg?jl=producthunt',
-  ])
+  const hrefs = await page.evaluate(() => ['meta', 'aux', 'blank'].map((id) => (document.getElementById(id) as HTMLAnchorElement).href))
+  expect(hrefs).toEqual([SITE_ORIGIN + '/dl/A.pkg?jl=producthunt', SITE_ORIGIN + '/dl/B.pkg?jl=producthunt', SITE_ORIGIN + '/dl/C.pkg?jl=producthunt'])
 
   const events = await mockd.awaitEvents(4)
   const files = events.filter((e) => e.n === 'click:download').map((e) => e.props?.file)
   expect(files.sort()).toEqual(['A.pkg', 'B.pkg', 'C.pkg'])
 })
 
-test('T11 — a target="_BLANK" tagged link is never delayed into a same-tab navigation and opens a popup', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T11 — a target="_BLANK" tagged link is never delayed into a same-tab navigation and opens a popup', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.defaults({ body: '<a id="cta" href="/thanks" target="_BLANK" data-jelto-event="cta">go</a>' })
@@ -224,11 +193,7 @@ test('T11 — a target="_BLANK" tagged link is never delayed into a same-tab nav
   await popup.close()
 })
 
-test('T11b — a handler that preventDefaults before the snippet suppresses both the event and the rewrite', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T11b — a handler that preventDefaults before the snippet suppresses both the event and the rewrite', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   // An inline script in <head> runs at parse time; the snippet is `defer`, so
@@ -244,9 +209,7 @@ test('T11b — a handler that preventDefaults before the snippet suppresses both
   await page.click('#dl')
   const events = await mockd.quiet(1_500)
   expect(events.filter((e) => e.n === 'click:download')).toHaveLength(0)
-  expect(await page.evaluate(() => (document.getElementById('dl') as HTMLAnchorElement).getAttribute('href'))).toBe(
-    '/dl/App.pkg',
-  )
+  expect(await page.evaluate(() => (document.getElementById('dl') as HTMLAnchorElement).getAttribute('href'))).toBe('/dl/App.pkg')
 })
 
 test('T11c — a click on a span inside the anchor is handled by the parent walk', async ({ page, site, mockd }) => {
@@ -336,11 +299,7 @@ test('T26 — data-file-types="pkg": .zip is not a download and .pkg is', async 
   expect(events.filter((e) => e.n === 'click:download').map((e) => e.props?.file)).toEqual(['App.pkg'])
 })
 
-test('T50 — a page handler that cancels a tagged same-tab link after the snippet keeps it cancelled; the event still sends', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T50 — a page handler that cancels a tagged same-tab link after the snippet keeps it cancelled; the event still sends', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   // A bubble-phase `document` listener runs after the snippet's capture listener
@@ -361,11 +320,7 @@ test('T50 — a page handler that cancels a tagged same-tab link after the snipp
   expect(page.url()).toBe(SITE_ORIGIN + '/')
 })
 
-test('T51 — a tagged javascript: link sends its event, is not cancelled by the snippet and is never re-navigated', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T51 — a tagged javascript: link sends its event, is not cancelled by the snippet and is never re-navigated', async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   // The page observes, after the snippet's capture listener, whether the click was cancelled.

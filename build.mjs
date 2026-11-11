@@ -138,32 +138,21 @@ for (const b of built) {
 
   const budget = OVERRIDE ?? b.budget
   const pct = ((b.gzipped / budget) * 100).toFixed(1)
-  process.stdout.write(
-    `  ${b.file.padEnd(44)}${String(b.raw.length).padStart(8)} B raw   (${b.what})\n` +
-      `  ${' '.repeat(42)}${String(b.gzipped).padStart(8)} B gzipped of ${budget} B (${b.rule}) — ${pct} %\n`,
-  )
+  process.stdout.write(`  ${b.file.padEnd(44)}${String(b.raw.length).padStart(8)} B raw   (${b.what})\n` + `  ${' '.repeat(42)}${String(b.gzipped).padStart(8)} B gzipped of ${budget} B (${b.rule}) — ${pct} %\n`)
   if (b.gzipped > budget) {
-    fail(
-      `make snippet: ${b.file} is over its ${b.rule} by ${b.gzipped - budget} B.\n` +
-        `  The number is re-argued in the SPEC against this measurement, in its own commit.\n` +
-        `  It is not raised here to match what the code turned out to weigh.\n`,
-    )
+    fail(`make snippet: ${b.file} is over its ${b.rule} by ${b.gzipped - budget} B.\n` + `  The number is re-argued in the SPEC against this measurement, in its own commit.\n` + `  It is not raised here to match what the code turned out to weigh.\n`)
   }
 }
 
 const [plain, cookie] = built
-process.stdout.write(
-  `  ${'cookie mode costs'.padEnd(44)}${String(cookie.raw.length - plain.raw.length).padStart(8)} B raw\n` +
-    `  ${' '.repeat(42)}${String(cookie.gzipped - plain.gzipped).padStart(8)} B gzipped\n`,
-)
+process.stdout.write(`  ${'cookie mode costs'.padEnd(44)}${String(cookie.raw.length - plain.raw.length).padStart(8)} B raw\n` + `  ${' '.repeat(42)}${String(cookie.gzipped - plain.gzipped).padStart(8)} B gzipped\n`)
 
 // Reject extra chunks and sourcemaps: each mode must ship as one script.
 const extensions = ['goals', 'checkout', 'crossdomain', 'entry']
 for (const name of extensions) {
   const file = `jelto.${name}.js`
   const outfile = path.join(outdir, file)
-  await esbuild.build({ entryPoints: [path.join(here, `src/${name}-extension.ts`)], outfile,
-    bundle: true, minify: true, format: 'iife', target: ['safari16', 'chrome109', 'firefox115'], legalComments: 'none' })
+  await esbuild.build({ entryPoints: [path.join(here, `src/${name}-extension.ts`)], outfile, bundle: true, minify: true, format: 'iife', target: ['safari16', 'chrome109', 'firefox115'], legalComments: 'none' })
   const compressed = await minify(readFileSync(outfile, 'utf8'), { ecma: 2020, compress: { passes: 2 }, mangle: true, format: { comments: false } })
   if (!compressed.code) throw new Error(`minification produced no ${file}`)
   const raw = Buffer.from(compressed.code + '\n')
@@ -179,7 +168,7 @@ for (const name of extensions) {
   // helper remains storage-free.
   if (size > budget || COOKIE_CODE.test(text) || /localStorage|indexedDB|\bcaches\b/.test(text) || (!['checkout', 'entry'].includes(name) && /sessionStorage/.test(text))) fail(`${file} violates extension size/storage contract\n`)
 }
-const expected = new Set([...VARIANTS.map((v) => v.file), ...extensions.map(name => `jelto.${name}.js`)])
+const expected = new Set([...VARIANTS.map((v) => v.file), ...extensions.map((name) => `jelto.${name}.js`)])
 const stray = readdirSync(outdir).filter((f) => !expected.has(f))
 if (stray.length > 0) {
   fail(`make snippet: dist carries more than ${[...expected].join(' and ')}: ${stray.join(', ')}\n`)

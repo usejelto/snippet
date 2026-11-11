@@ -15,7 +15,9 @@ function context(): PageContext {
   return { active: active && !blocked(cfg) && !stopped(), pageviewId, url: cur }
 }
 
-function changed(): void { dispatchEvent(new Event('jelto:pageview')) }
+function changed(): void {
+  dispatchEvent(new Event('jelto:pageview'))
+}
 
 /**
  * Initialize after other modules: this drains the queued API calls and may send the first
@@ -33,7 +35,9 @@ export function initPage(c: Config): void {
   if (buffered) {
     try {
       for (const call of buffered) api.apply(0, call)
-    } catch { /* a malformed pre-load queue must not throw into the host page */ }
+    } catch {
+      /* a malformed pre-load queue must not throw into the host page */
+    }
     buffered.length = 0
   }
 
@@ -77,7 +81,9 @@ function api(cmd: string, a?: unknown, b?: unknown, options?: EventOptions): str
       const q = ((api as typeof api & { q?: unknown[] }).q ||= [])
       if (q.length < 20) q.push([cmd, a])
     }
-  } catch { /* a bad call must not throw into the host page */ }
+  } catch {
+    /* a bad call must not throw into the host page */
+  }
 }
 
 /** Wait for router URL/title updates before sending; unchanged URLs are deduplicated. */
@@ -91,8 +97,10 @@ function moved(): void {
     const u = pageUrl(cfg)
     // A router may leave and return before its URL settles. Preserve the unchanged-page
     // rule and resume the original helper context in that case.
-    if (u == cur && pageviewId) { active = true; changed() }
-    else pageview({ u, r: cur })
+    if (u == cur && pageviewId) {
+      active = true
+      changed()
+    } else pageview({ u, r: cur })
   }, 300)
 }
 
@@ -108,16 +116,25 @@ function pageview(opts?: { u?: string; r?: string }): void {
     if (cur) pvEnd()
     active = !blocked(cfg) && !excluded(cfg, o.u ? urlPath(cfg, u) : pagePath(cfg)) && !stopped()
     pageviewId = null
-    if (!active) { changed(); return }
+    if (!active) {
+      changed()
+      return
+    }
     const r = o.r == null ? document.referrer : o.r
     const id = uuid()
-    if (!send({
-      n: 'pageview',
-      id,
-      u,
-      r: /^https?:\/\//.test(r) ? r : undefined,
-      w: screen.width,
-    })) { active = false; changed(); return }
+    if (
+      !send({
+        n: 'pageview',
+        id,
+        u,
+        r: /^https?:\/\//.test(r) ? r : undefined,
+        w: screen.width,
+      })
+    ) {
+      active = false
+      changed()
+      return
+    }
     // Write first-touch memory after sending, so newly stored attribution applies to
     // subsequent events.
     remember()
@@ -125,5 +142,7 @@ function pageview(opts?: { u?: string; r?: string }): void {
     pageviewId = id
     pvStart(id, u)
     changed()
-  } catch { /* a failed pageview must not throw into the host page */ }
+  } catch {
+    /* a failed pageview must not throw into the host page */
+  }
 }

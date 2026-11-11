@@ -15,7 +15,9 @@ let id = ''
 export function initVid(): void {
   try {
     id = read() || mint()
-  } catch { /* a refused or unreadable cookie leaves identity empty: cookieless counting */ }
+  } catch {
+    /* a refused or unreadable cookie leaves identity empty: cookieless counting */
+  }
 }
 
 /** The value of `vid`, or `""` when no field is to be sent. */
@@ -48,13 +50,6 @@ function newID(): string {
  * path=/ and SameSite=Lax.
  */
 function mint(): string {
-  document.cookie =
-    NAME +
-    '=' +
-    newID() +
-    ';path=/;max-age=' +
-    MAX_AGE +
-    ';samesite=lax' +
-    (location.protocol == 'https:' ? ';secure' : '')
+  document.cookie = NAME + '=' + newID() + ';path=/;max-age=' + MAX_AGE + ';samesite=lax' + (location.protocol == 'https:' ? ';secure' : '')
   return read()
 }

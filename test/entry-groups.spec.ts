@@ -16,7 +16,7 @@ test('entry groups choose configured order and retain only an id and timestamp a
   await lifecycle(page)
   await site.install()
   const requests: Record<string, unknown>[] = []
-  await page.route(endpoint, async route => {
+  await page.route(endpoint, async (route) => {
     requests.push(route.request().postDataJSON())
     await route.fulfill({ status: 202, headers: { 'Access-Control-Allow-Origin': 'https://site.example' }, body: '{}' })
   })
@@ -24,7 +24,7 @@ test('entry groups choose configured order and retain only an id and timestamp a
   await site.goto('/pricing/private-customer?utm_source=launch')
   const original = await page.evaluate(metadata)
   expect(original).toEqual({ jelto_cohort: 'launch', jelto_entry_page: 'pricing', jelto_pageview: expect.any(String) })
-  const stored = await page.evaluate(product => JSON.parse(sessionStorage.getItem('jelto_entry_' + product)!), PRODUCT)
+  const stored = await page.evaluate((product) => JSON.parse(sessionStorage.getItem('jelto_entry_' + product)!), PRODUCT)
   expect(Object.keys(stored).sort()).toEqual(['at', 'id'])
   expect(stored.id).toBe('pricing')
   expect(JSON.stringify(stored)).not.toContain('private-customer')
@@ -50,10 +50,10 @@ test('expired or removed entry groups cannot be replayed as configured attributi
   await site.install()
   site.defaults({ head: entry + checkout })
   await site.goto('/pricing/start')
-  await page.evaluate(product => sessionStorage.setItem('jelto_entry_' + product, JSON.stringify({ id: 'pricing', at: Date.now() - 1800001 })), PRODUCT)
+  await page.evaluate((product) => sessionStorage.setItem('jelto_entry_' + product, JSON.stringify({ id: 'pricing', at: Date.now() - 1800001 })), PRODUCT)
   await site.goto('/other')
   expect((await page.evaluate(metadata)).jelto_entry_page).toBe('broad')
-  await page.evaluate(product => sessionStorage.setItem('jelto_entry_' + product, JSON.stringify({ id: 'removed_group', at: Date.now() })), PRODUCT)
+  await page.evaluate((product) => sessionStorage.setItem('jelto_entry_' + product, JSON.stringify({ id: 'removed_group', at: Date.now() })), PRODUCT)
   await site.goto('/pricing/start')
   expect((await page.evaluate(metadata)).jelto_entry_page).toBe('pricing')
 })
@@ -80,14 +80,17 @@ test('entry capture follows eligible SPA pageviews and ignores excluded paths', 
 test('entry metadata and existing pageviews reach the providers without inventing a channel', async ({ page, site }) => {
   await lifecycle(page)
   await site.install()
-  site.defaults({ head: entry + checkout, body: `
+  site.defaults({
+    head: entry + checkout,
+    body: `
     <a id="lemon" data-jelto-checkout="lemonsqueezy" href="https://shop.lemonsqueezy.com/buy/x">pay</a>
     <a id="polar" data-jelto-checkout="polar" href="https://polar.sh/checkout/x">pay</a>
-    <a id="stripe" data-jelto-checkout="stripe" href="https://buy.stripe.com/x">pay</a>` })
+    <a id="stripe" data-jelto-checkout="stripe" href="https://buy.stripe.com/x">pay</a>`,
+  })
   await site.goto('/pricing/start')
   const hrefs = await page.evaluate(() => {
-    document.addEventListener('click', event => event.preventDefault())
-    return ['lemon', 'polar', 'stripe'].map(id => {
+    document.addEventListener('click', (event) => event.preventDefault())
+    return ['lemon', 'polar', 'stripe'].map((id) => {
       const link = document.getElementById(id) as HTMLAnchorElement
       link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
       return link.href
@@ -105,7 +108,7 @@ test('unmatched hosts and excluded initialization cannot create entry memory', a
   site.defaults({ head: entry + checkout })
   await site.goto('https://unregistered.example/pricing/start')
   expect(await page.evaluate(metadata)).toEqual({ jelto_pageview: expect.any(String) })
-  expect(await page.evaluate(product => sessionStorage.getItem('jelto_entry_' + product), PRODUCT)).toBeNull()
+  expect(await page.evaluate((product) => sessionStorage.getItem('jelto_entry_' + product), PRODUCT)).toBeNull()
   await site.goto('/pricing/start?jelto_ignore=1')
   expect(await storageCalls(page)).toEqual([])
 })

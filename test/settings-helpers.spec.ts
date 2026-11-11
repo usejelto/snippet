@@ -17,7 +17,7 @@ for (const bundle of [CDN, CDN_COOKIE]) {
     expect(await storageCalls(page)).toEqual([])
     // The query flag is document-scoped, not a persistent browser preference.
     await site.goto('/?utm_source=newsletter')
-    expect((await mockd.awaitEvents(1)).some(event => event.n === 'pageview')).toBe(true)
+    expect((await mockd.awaitEvents(1)).some((event) => event.n === 'pageview')).toBe(true)
   })
 }
 
@@ -38,10 +38,10 @@ test('visibility goals observe dynamic elements once and never scrape text', asy
     document.body.append(late)
   })
   const events = await mockd.awaitEvents(3)
-  expect(events.filter(event => event.n === 'pricing:seen')).toHaveLength(1)
-  expect(events.filter(event => event.n === 'checkout.seen')).toHaveLength(1)
-  expect(events.some(event => event.n === 'invalid name')).toBe(false)
-  for (const event of events.filter(event => event.n.endsWith('seen'))) {
+  expect(events.filter((event) => event.n === 'pricing:seen')).toHaveLength(1)
+  expect(events.filter((event) => event.n === 'checkout.seen')).toHaveLength(1)
+  expect(events.some((event) => event.n === 'invalid name')).toBe(false)
+  for (const event of events.filter((event) => event.n.endsWith('seen'))) {
     expect(event.props ?? {}).toEqual({})
     expect(event.i).toBe(false)
   }
@@ -53,18 +53,21 @@ test('checkout helper forwards cohort metadata to the three providers and preser
   await lifecycle(page)
   await spyOnStorage(page)
   await site.install()
-  site.defaults({ head: helpers, body: `
+  site.defaults({
+    head: helpers,
+    body: `
     <a id="stripe" data-jelto-checkout="stripe" href="https://buy.stripe.com/example">pay</a>
     <a id="existing" data-jelto-checkout="stripe" href="https://buy.stripe.com/example?client_reference_id=order_123">pay</a>
     <a id="lemon" data-jelto-checkout="lemonsqueezy" href="https://shop.lemonsqueezy.com/buy/example?checkout%5Bcustom%5D%5Border%5D=123">pay</a>
     <a id="polar" data-jelto-checkout="polar" href='https://polar.sh/checkout/example?metadata=%7B%22order%22%3A%22123%22%7D'>pay</a>
     <a id="untrusted" data-jelto-checkout="stripe" href="https://buy.stripe.com.evil.example/pay">pay</a>
-    <a id="plain" href="https://buy.stripe.com/example">pay</a>` })
+    <a id="plain" href="https://buy.stripe.com/example">pay</a>`,
+  })
   await site.goto('/?utm_source=newsletter&utm_medium=email')
   await mockd.awaitEvents(1)
   const hrefs = await page.evaluate(() => {
-    document.addEventListener('click', event => event.preventDefault())
-    return ['stripe', 'existing', 'lemon', 'polar', 'untrusted', 'plain'].map(id => {
+    document.addEventListener('click', (event) => event.preventDefault())
+    return ['stripe', 'existing', 'lemon', 'polar', 'untrusted', 'plain'].map((id) => {
       const link = document.getElementById(id) as HTMLAnchorElement
       link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
       return link.href
@@ -74,7 +77,7 @@ test('checkout helper forwards cohort metadata to the three providers and preser
   expect(stripeReference).toMatch(/^jl2_/)
   const pageview = stripeReference.slice(4, 40)
   const events = await mockd.events()
-  expect(events.some(event => event.n === 'pageview' && event.id === pageview)).toBe(true)
+  expect(events.some((event) => event.n === 'pageview' && event.id === pageview)).toBe(true)
   expect(Buffer.from(stripeReference.slice(41), 'base64url').toString()).toBe('newsletter~email')
   expect(new URL(hrefs[1]!).searchParams.get('client_reference_id')).toBe('order_123')
   expect(new URL(hrefs[2]!).searchParams.get('checkout[custom][jelto_cohort]')).toBe('newsletter~email')

@@ -6,7 +6,11 @@ type GoalAPI = (command: string, name?: string, props?: Props, options?: EventOp
 type GoalState = { observer: IntersectionObserver; timer: number; visible: boolean; name: string }
 const goalWindow = window as unknown as { jelto?: GoalAPI; __jeltoGoals?: boolean; __jeltoForms?: boolean }
 const context = (): PageContext | undefined => {
-  try { return goalWindow.jelto?.('context') as PageContext | undefined } catch { return undefined }
+  try {
+    return goalWindow.jelto?.('context') as PageContext | undefined
+  } catch {
+    return undefined
+  }
 }
 const selector = '[data-jelto-visible]'
 
@@ -14,17 +18,21 @@ const selector = '[data-jelto-visible]'
 // the form. Read declared attributes only; never inspect controls or FormData.
 if (context()?.active && !goalWindow.__jeltoForms) {
   goalWindow.__jeltoForms = true
-  document.addEventListener('submit', event => {
-    const form = event.target
-    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || !context()?.active) return
-    const name = form.getAttribute('data-jelto-event') || ''
-    if (!/^[a-z0-9_:.-]{1,64}$/.test(name)) return
-    const props: Props = {}
-    for (const attribute of form.attributes) {
-      if (attribute.name.startsWith('data-jelto-event-')) props[attribute.name.slice(17)] = attribute.value
-    }
-    goalWindow.jelto?.('event', name, props)
-  }, true)
+  document.addEventListener(
+    'submit',
+    (event) => {
+      const form = event.target
+      if (event.defaultPrevented || !(form instanceof HTMLFormElement) || !context()?.active) return
+      const name = form.getAttribute('data-jelto-event') || ''
+      if (!/^[a-z0-9_:.-]{1,64}$/.test(name)) return
+      const props: Props = {}
+      for (const attribute of form.attributes) {
+        if (attribute.name.startsWith('data-jelto-event-')) props[attribute.name.slice(17)] = attribute.value
+      }
+      goalWindow.jelto?.('event', name, props)
+    },
+    true,
+  )
 }
 
 if (context()?.active && 'IntersectionObserver' in window && !goalWindow.__jeltoGoals) {
@@ -72,17 +80,20 @@ if (context()?.active && 'IntersectionObserver' in window && !goalWindow.__jelto
     // Native observers can report a zero-area edge as intersecting. Observe
     // a positive boundary for zero so gaining/losing visible pixels notifies
     // us as well; isIntersecting alone does not change at that transition.
-    const observer = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (states.get(element) !== state) return
-        state.visible = entry.isIntersecting && entry.intersectionRatio > 0 && entry.intersectionRatio >= threshold
-        if (!state.visible || !eligible()) cancel(state)
-        else if (!state.timer) {
-          if (delay) state.timer = setTimeout(() => deliver(element, state), delay)
-          else deliver(element, state)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (states.get(element) !== state) return
+          state.visible = entry.isIntersecting && entry.intersectionRatio > 0 && entry.intersectionRatio >= threshold
+          if (!state.visible || !eligible()) cancel(state)
+          else if (!state.timer) {
+            if (delay) state.timer = setTimeout(() => deliver(element, state), delay)
+            else deliver(element, state)
+          }
         }
-      }
-    }, { threshold: threshold || Number.EPSILON })
+      },
+      { threshold: threshold || Number.EPSILON },
+    )
     const state: GoalState = { observer, timer: 0, visible: false, name }
     states.set(element, state)
     observer.observe(element)
@@ -104,25 +115,32 @@ if (context()?.active && 'IntersectionObserver' in window && !goalWindow.__jelto
     if (eligible()) each(document, observe)
   }
 
-  const mutations = new MutationObserver(records => {
+  const mutations = new MutationObserver((records) => {
     for (const record of records) {
       if (record.type === 'attributes') {
         const element = record.target as Element
         remove(element)
         if (element.matches(selector)) observe(element)
       } else {
-        record.removedNodes.forEach(node => { if (node instanceof Element) each(node, remove) })
-        record.addedNodes.forEach(node => { if (node instanceof Element) each(node, observe) })
+        record.removedNodes.forEach((node) => {
+          if (node instanceof Element) each(node, remove)
+        })
+        record.addedNodes.forEach((node) => {
+          if (node instanceof Element) each(node, observe)
+        })
       }
     }
   })
   function update(): void {
     mutations.disconnect()
     refresh()
-    if (eligible()) mutations.observe(document.documentElement, {
-      childList: true, subtree: true, attributes: true,
-      attributeFilter: ['data-jelto-visible', 'data-jelto-visible-threshold', 'data-jelto-visible-delay'],
-    })
+    if (eligible())
+      mutations.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-jelto-visible', 'data-jelto-visible-threshold', 'data-jelto-visible-delay'],
+      })
   }
   addEventListener('jelto:pageview', update)
   document.addEventListener('visibilitychange', update)

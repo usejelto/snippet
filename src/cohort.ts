@@ -13,7 +13,10 @@ export function initCohort(x: Config): void {
 
 /** Clean a cohort label component: lower-case, keep `[a-z0-9._-]`, truncate the segment to 64. */
 function clean(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 64)
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '')
+    .slice(0, 64)
 }
 
 /** The cohort computation without the memory branch: this page's own last touch, or `''`. */
@@ -57,7 +60,9 @@ function read(): { f: string; fd: string } | undefined {
         if (Date.parse(fd) >= Date.parse(today()) - 2592e6) return { f: v.slice(0, i), fd }
         localStorage.removeItem(KEY)
       }
-    } catch { /* unreadable storage: no first-touch memory */ }
+    } catch {
+      /* unreadable storage: no first-touch memory */
+    }
   }
 }
 
@@ -82,14 +87,7 @@ export function decorate(href: string): string {
   if (/[?&](jl|utm_source)=/.test(base)) return href
   const l = cohort()
   if (!l) return href
-  return (
-    base +
-    (base.indexOf('?') < 0 ? '?' : '&') +
-    'jl=' +
-    l +
-    (firstTouch ? '&jt=first' : '') +
-    (i < 0 ? '' : href.slice(i))
-  )
+  return base + (base.indexOf('?') < 0 ? '?' : '&') + 'jl=' + l + (firstTouch ? '&jt=first' : '') + (i < 0 ? '' : href.slice(i))
 }
 
 /**
@@ -110,6 +108,8 @@ export function remember(): void {
   if (l && !read()) {
     try {
       localStorage.setItem(KEY, l + '|' + today())
-    } catch { /* refused storage: nothing is remembered */ }
+    } catch {
+      /* refused storage: nothing is remembered */
+    }
   }
 }

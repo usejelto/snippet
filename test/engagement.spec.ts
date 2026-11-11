@@ -15,11 +15,7 @@ import type { WireEvent } from './harness/mockd'
 
 const TALL = '<div id="pad"></div>'
 
-async function boot(
-  page: import('@playwright/test').Page,
-  site: import('./harness/site').Site,
-  spec: { attrs?: Record<string, string | true>; body?: string } = {},
-): Promise<void> {
+async function boot(page: import('@playwright/test').Page, site: import('./harness/site').Site, spec: { attrs?: Record<string, string | true>; body?: string } = {}): Promise<void> {
   await page.clock.install()
   await lifecycle(page)
   await site.install()
@@ -49,11 +45,7 @@ async function scrollTo(page: import('@playwright/test').Page, y: number | 'bott
   await page.clock.runFor(120)
 }
 
-test('T33 — hidden time is not engaged time, and a stale terminal beacon is suppressed', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T33 — hidden time is not engaged time, and a stale terminal beacon is suppressed', async ({ page, site, mockd }) => {
   await boot(page, site)
   const pv = (await mockd.awaitEvents(1))[0]!.id
 
@@ -173,11 +165,7 @@ test('T37 — hide, show, hide again with nothing changed sends only one engagem
   expect(rows).toHaveLength(1)
 })
 
-test('T38 — on an SPA path change the engagement is on the wire BEFORE the new pageview', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T38 — on an SPA path change the engagement is on the wire BEFORE the new pageview', async ({ page, site, mockd }) => {
   await boot(page, site)
   await setDocumentHeight(page, 3)
   await scrollTo(page, 'bottom')
@@ -235,11 +223,7 @@ test('T39b — the beacon goes out AT the blur, not at close', async ({ page, si
   expect(rows[0]!.e!).toBeLessThanOrEqual(20_500)
 })
 
-test('T39c — three blur/refocus cycles inside 2 s send nothing, and the time is not lost', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T39c — three blur/refocus cycles inside 2 s send nothing, and the time is not lost', async ({ page, site, mockd }) => {
   await boot(page, site)
   for (let i = 0; i < 3; i++) {
     await page.clock.runFor(600)

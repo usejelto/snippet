@@ -15,7 +15,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 // the CSP-safety rule carries neither 'unsafe-inline' nor a nonce.
 const STUB = `window.jelto = window.jelto || function () { (window.jelto.q = window.jelto.q || []).push(arguments) }`
 
-test('T13 — a call buffered by §1\'s stub is drained once after load', async ({ page, site, mockd }) => {
+test("T13 — a call buffered by §1's stub is drained once after load", async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.asset('/app.js', STUB + `\nwindow.jelto('event', 'signup', { plan: 'pro' })\nwindow.__queued = window.jelto.q.length`)
@@ -33,11 +33,7 @@ test('T13 — a call buffered by §1\'s stub is drained once after load', async 
   expect(await page.evaluate(() => typeof window.jelto)).toBe('function')
 })
 
-test('T13 — a null or non-array-like entry in the pre-load queue is skipped without throwing, and the pageview still sends', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test('T13 — a null or non-array-like entry in the pre-load queue is skipped without throwing, and the pageview still sends', async ({ page, site, mockd }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
   await lifecycle(page)
@@ -53,11 +49,7 @@ test('T13 — a null or non-array-like entry in the pre-load queue is skipped wi
   expect(errors).toEqual([])
 })
 
-test('T13b — without the stub, window.jelto is undefined before load and the page\'s own call throws', async ({
-  page,
-  site,
-  mockd,
-}) => {
+test("T13b — without the stub, window.jelto is undefined before load and the page's own call throws", async ({ page, site, mockd }) => {
   await lifecycle(page)
   await site.install()
   site.asset(
@@ -150,14 +142,14 @@ for (const character of ['x', '界']) {
     await site.install()
     site.defaults({ attrs: { autoPageview: 'off' } })
     await site.goto('/')
-    await page.evaluate(value => {
+    await page.evaluate((value) => {
       for (let index = 0; index < 100; index++) {
         window.jelto('event', 'custom', { index, a: value.repeat(200), b: value.repeat(200), c: value.repeat(200) })
       }
     }, character)
     const events = await mockd.awaitEvents(100, 10000)
-    expect(events.map(event => event.props?.index)).toEqual(Array.from({ length: 100 }, (_, index) => index))
-    expect(new Set(events.map(event => event.id)).size).toBe(100)
+    expect(events.map((event) => event.props?.index)).toEqual(Array.from({ length: 100 }, (_, index) => index))
+    expect(new Set(events.map((event) => event.id)).size).toBe(100)
     for (const event of events) {
       for (const key of ['a', 'b', 'c']) expect(event.props?.[key]).toBe(character.repeat(200))
     }
@@ -177,13 +169,13 @@ for (const atHead of [false, true]) {
     await site.install()
     site.defaults({ attrs: { autoPageview: 'off' } })
     await site.goto('/')
-    await page.evaluate(head => {
+    await page.evaluate((head) => {
       if (!head) window.jelto('event', 'before')
       window.jelto('event', 'oversized', { value: 'x'.repeat(65536) })
       window.jelto('event', 'after')
     }, atHead)
     const names = atHead ? ['after'] : ['before', 'after']
-    expect((await mockd.awaitEvents(names.length)).map(event => event.n)).toEqual(names)
+    expect((await mockd.awaitEvents(names.length)).map((event) => event.n)).toEqual(names)
     for (const body of await mockd.bodies()) expect(Buffer.byteLength(body, 'utf8')).toBeLessThanOrEqual(65536)
   })
 }
@@ -191,19 +183,19 @@ for (const atHead of [false, true]) {
 for (const malformed of ['bigint', 'circular']) {
   test(`${malformed} custom properties cannot poison neighboring valid events`, async ({ page, site, mockd }) => {
     const errors: string[] = []
-    page.on('pageerror', error => errors.push(String(error)))
+    page.on('pageerror', (error) => errors.push(String(error)))
     await lifecycle(page)
     await site.install()
     site.defaults({ attrs: { autoPageview: 'off' } })
     await site.goto('/')
-    await page.evaluate(kind => {
+    await page.evaluate((kind) => {
       const props: Record<string, unknown> = {}
       props.value = kind === 'bigint' ? 1n : props
       window.jelto('event', 'before')
       window.jelto('event', 'malformed', props)
       window.jelto('event', 'after')
     }, malformed)
-    expect((await mockd.awaitEvents(2)).map(event => event.n)).toEqual(['before', 'after'])
+    expect((await mockd.awaitEvents(2)).map((event) => event.n)).toEqual(['before', 'after'])
     expect(errors).toEqual([])
     validateAgainstSchema(await mockd.bodies())
   })
@@ -223,7 +215,7 @@ test('queued custom events retain their accepted properties when the page reuses
     props.value = props
   })
   const events = await mockd.awaitEvents(2)
-  expect(events.map(event => event.props)).toEqual([{ plan: 'free' }, { plan: 'paid' }])
+  expect(events.map((event) => event.props)).toEqual([{ plan: 'free' }, { plan: 'paid' }])
   validateAgainstSchema(await mockd.bodies())
 })
 
@@ -274,10 +266,7 @@ test('T22 — every request body validates against spec/wire-v1.schema.json', as
   await site.install()
   site.defaults({
     attrs: { memory: 'on' },
-    body:
-      '<a id="dl" href="/dl/App.pkg">d</a>' +
-      '<a id="out" href="https://twitter.com/x">o</a>' +
-      '<button id="tag" data-jelto-event="signup" data-jelto-event-plan="pro">t</button>',
+    body: '<a id="dl" href="/dl/App.pkg">d</a>' + '<a id="out" href="https://twitter.com/x">o</a>' + '<button id="tag" data-jelto-event="signup" data-jelto-event-plan="pro">t</button>',
   })
   await site.goto('/download?utm_source=producthunt&utm_medium=social', {
     from: 'https://news.ycombinator.com/item?id=1',

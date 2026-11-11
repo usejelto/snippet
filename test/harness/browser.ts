@@ -76,14 +76,12 @@ export async function lifecycle(page: Page, options: { startHidden?: boolean } =
  * Visibility can return without window focus. Preserve that distinction so the engagement
  * clock does not accrue time.
  */
-export const show = (page: Page, options: { focus?: boolean } = {}): Promise<void> =>
-  page.evaluate((withFocus: boolean) => window.__jelto.show(withFocus), options.focus !== false)
+export const show = (page: Page, options: { focus?: boolean } = {}): Promise<void> => page.evaluate((withFocus: boolean) => window.__jelto.show(withFocus), options.focus !== false)
 export const hide = (page: Page): Promise<void> => page.evaluate(() => window.__jelto.hide())
 export const blur = (page: Page): Promise<void> => page.evaluate(() => window.__jelto.blur())
 export const focus = (page: Page): Promise<void> => page.evaluate(() => window.__jelto.focus())
 export const pagehide = (page: Page): Promise<void> => page.evaluate(() => window.__jelto.pagehide())
-export const pageshow = (page: Page, persisted = true): Promise<void> =>
-  page.evaluate((p: boolean) => window.__jelto.pageshow(p), persisted)
+export const pageshow = (page: Page, persisted = true): Promise<void> => page.evaluate((p: boolean) => window.__jelto.pageshow(p), persisted)
 
 /**
  * Makes the document `n` viewports tall, or shorter than one. Scroll depth divides by
@@ -151,8 +149,7 @@ export async function spyOnStorage(page: Page): Promise<void> {
 }
 
 /** What the spy above recorded, oldest first. */
-export const storageCalls = (page: Page): Promise<string[]> =>
-  page.evaluate(() => (window as unknown as { __storage: string[] }).__storage)
+export const storageCalls = (page: Page): Promise<string[]> => page.evaluate(() => (window as unknown as { __storage: string[] }).__storage)
 
 /**
  * A browser that silently REFUSES cookies: the setter runs and stores nothing,
