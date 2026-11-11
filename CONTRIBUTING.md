@@ -15,7 +15,7 @@ For setup and account help, see [SUPPORT.md](SUPPORT.md).
 
 ## Local development
 
-Node 24 or later and Make. Browser tests need Playwright and a contracts directory.
+Node 24.22.2 (the release `.nvmrc` pins) and Make. Browser tests need Playwright and a contracts directory.
 
 Fork and clone this repository, create a branch from `main`, and run commands
 from this repository's root. A standalone checkout contains its build inputs;

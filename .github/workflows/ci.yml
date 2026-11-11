@@ -42,7 +42,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       # The same command a contributor runs: the type check, every bundle and
       # its budget, the source boundaries, then the security scans (npm audit
@@ -96,7 +96,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - name: Install the pinned contracts archive
         env:
