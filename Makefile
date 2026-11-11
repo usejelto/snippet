@@ -6,4 +6,4 @@
 # in the backend refreshes it, and nothing edits it here.
 include vendor/quality/quality.mk
 
-security: secrets
+security: secrets workflow-audit
