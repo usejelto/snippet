@@ -20,15 +20,15 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.56.0",
-    "@types/node": "^24.9.2",
-    "esbuild": "^0.25.0",
-    "eslint": "^10.14.0",
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.15.0",
     "globals": "^17.14.0",
     "knip": "^6.45.1",
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "terser": "5.51.2",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.72.2"
   },
   "overrides": {
